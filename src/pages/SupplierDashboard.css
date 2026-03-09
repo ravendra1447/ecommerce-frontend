@@ -1,0 +1,261 @@
+.supplier-dashboard {
+  min-height: calc(100vh - 200px);
+  background: #f8f9fa;
+  padding: 2rem;
+}
+
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  color: #333;
+  font-size: 2rem;
+}
+
+.btn-add-product {
+  padding: 0.8rem 1.5rem;
+  background: #8B5CF6;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-add-product:hover {
+  background: #7C3AED;
+  transform: translateY(-2px);
+}
+
+.status-banner {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.status-pending {
+  background: #FFF3CD;
+  border-left: 4px solid #FFC107;
+  color: #856404;
+}
+
+.status-approved {
+  background: #D4EDDA;
+  border-left: 4px solid #28A745;
+  color: #155724;
+}
+
+.status-rejected {
+  background: #F8D7DA;
+  border-left: 4px solid #DC3545;
+  color: #721C24;
+}
+
+.status-inactive {
+  background: #FFF3E0;
+  border-left: 4px solid #FF9800;
+  color: #E65100;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0;
+}
+
+.info-section,
+.products-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.info-section h2,
+.products-section h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-grid div {
+  padding: 0.8rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.product-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+/*  padding: 1.5rem;*/
+  background: white;
+  transition: all 0.3s;
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.product-info h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.product-price {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin: 0.5rem 0;
+}
+
+.product-stock {
+  color: #666;
+  margin: 0.5rem 0;
+}
+
+.product-status {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.product-status.active {
+  background: #D4EDDA;
+  color: #155724;
+}
+
+.product-status.inactive {
+  background: #F8D7DA;
+  color: #721C24;
+}
+
+.product-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-view {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: #8B5CF6;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-view:hover {
+  background: #7C3AED;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+}
+
+.empty-state p {
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: #8B5CF6;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background: #7C3AED;
+  transform: translateY(-2px);
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 4rem;
+  font-size: 1.2rem;
+}
+
+.error {
+  color: #DC3545;
+}
+
+.error-message {
+  background: white;
+  padding: 3rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.error-message h2 {
+  color: #DC3545;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+

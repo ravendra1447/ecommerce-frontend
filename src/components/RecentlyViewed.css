@@ -1,0 +1,147 @@
+/* Recently Viewed Section - Alibaba Style */
+.recently-viewed-section-alibaba {
+  background: #ffffff;
+  padding: 2rem 0 3rem 0;
+  margin-top: 2rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.recently-viewed-container-alibaba {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.recently-viewed-section-alibaba .products-section-alibaba {
+  margin-bottom: 0;
+}
+
+.recently-viewed-section-alibaba .section-header-alibaba {
+  margin-bottom: 1.5rem;
+}
+
+.recently-viewed-section-alibaba .section-title-alibaba {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 0.3rem 0;
+}
+
+.recently-viewed-section-alibaba .section-subtitle-alibaba {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+  font-weight: 400;
+}
+
+.recently-viewed-section-alibaba .products-scroll-alibaba {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0 1rem 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #FF6A00 #f0f0f0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.recently-viewed-section-alibaba .products-scroll-alibaba::-webkit-scrollbar {
+  height: 6px;
+}
+
+.recently-viewed-section-alibaba .products-scroll-alibaba::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.recently-viewed-section-alibaba .products-scroll-alibaba::-webkit-scrollbar-thumb {
+  background: #FF6A00;
+  border-radius: 3px;
+}
+
+.recently-viewed-section-alibaba .products-scroll-alibaba::-webkit-scrollbar-thumb:hover {
+  background: #E55A00;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .recently-viewed-section-alibaba {
+    padding: 1.5rem 0 2rem 0;
+    margin-top: 1.5rem;
+  }
+
+  .recently-viewed-container-alibaba {
+    padding: 0 1.5rem;
+  }
+
+  .recently-viewed-section-alibaba .section-title-alibaba {
+    font-size: 1.1rem;
+  }
+
+  .recently-viewed-section-alibaba .section-subtitle-alibaba {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .recently-viewed-section-alibaba {
+    padding: 1rem 0 1.5rem 0;
+    margin-top: 1rem;
+  }
+
+  .recently-viewed-container-alibaba {
+    padding: 0 1rem;
+  }
+
+  .recently-viewed-section-alibaba .section-header-alibaba {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .recently-viewed-section-alibaba .section-title-alibaba {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .recently-viewed-section-alibaba .section-subtitle-alibaba {
+    font-size: 0.8rem;
+  }
+
+  .recently-viewed-section-alibaba .products-scroll-alibaba {
+    padding: 0.5rem 0 1rem 0;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+    scroll-snap-type: x mandatory;
+    width: 100%;
+  }
+
+  .recently-viewed-section-alibaba .product-scroll-item {
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .recently-viewed-section-alibaba {
+    padding: 0.8rem 0 1.2rem 0;
+  }
+
+  .recently-viewed-container-alibaba {
+    padding: 0 0.8rem;
+  }
+
+  .recently-viewed-section-alibaba .section-title-alibaba {
+    font-size: 1rem;
+  }
+
+  .recently-viewed-section-alibaba .section-subtitle-alibaba {
+    font-size: 0.75rem;
+  }
+}
+
