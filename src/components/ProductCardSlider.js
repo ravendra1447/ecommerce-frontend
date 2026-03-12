@@ -62,42 +62,6 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     }
   }, [images]);
 
-  // Debug: Log MOQ data (remove in production)
-  useEffect(() => {
-    if (product) {
-      console.log('ProductCardSlider MOQ Debug:', {
-        productId: product.id || product._id,
-        productName: product.name,
-        sale_min_qty: product.sale_min_qty,
-        saleMinQty: product.saleMinQty,
-        min_qty: product.min_qty,
-        minQty: product.minQty,
-        moq: moq,
-        hasMoq: moq !== null
-      });
-    }
-  }, [product, moq]);
-  
-  // Debug: Log images data
-  useEffect(() => {
-    if (product) {
-      console.log('ProductCardSlider Images Debug:', {
-        productId: product.id || product._id,
-        productName: product.name,
-        rawImages: product.images,
-        processedImages: images,
-        imagesLength: images.length,
-        hasMultipleImages: images.length > 1,
-        currentImageIndex: currentImageIndex
-      });
-    }
-  }, [product, images, currentImageIndex]);
-
-  const getImageUrlLocal = (imagePath) => {
-    if (!imagePath) return '/placeholder.png';
-    if (imagePath.startsWith('http')) return imagePath;
-    return getImageUrl(imagePath);
-  };
 
   const handlePrevImage = (e) => {
     e.stopPropagation();
@@ -121,6 +85,13 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     e.stopPropagation();
     setCurrentImageIndex(index);
   };
+
+  const getImageUrlLocal = (imagePath) => {
+    if (!imagePath) return '/placeholder.png';
+    if (imagePath.startsWith('http')) return imagePath;
+    return getImageUrl(imagePath);
+  };
+
 
   const handleCardClick = () => {
     navigate(`/product-detail/${product.id}`);
@@ -186,7 +157,7 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
           className="product-slider-image"
         />
 
-        {/* Play Button for Video */}
+        {/* Play Button Overlay for Videos */}
         {hasVideo && currentImageIndex === 0 && (
           <div className="play-button-overlay">
             <div className="play-icon"></div>

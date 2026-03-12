@@ -128,7 +128,34 @@
 
 /* Products Grid with Stagger Animation */
 .products-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Mobile: 1 card per row */
+  gap: 1.5rem;
   animation: fadeIn 0.6s ease-out 0.2s both;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1400px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 2rem;
+  }
 }
 
 .products-grid > * {
@@ -173,6 +200,17 @@
   
   .catalog-header-content {
     padding: 2rem 1.5rem;
+  }
+
+  /* Mobile: Ensure full width cards */
+  .products-grid {
+    padding: 0 1rem;
+  }
+
+  .product-card-slider {
+    min-width: 100%;
+    max-width: 100%;
+    width: 100%;
   }
 }
 

@@ -230,7 +230,7 @@ const Login = () => {
                   placeholder="Enter your phone number (e.g., 919999480404)"
                   pattern="[0-9]{10,12}"
                 />
-                <small>Enter 10-12 digit phone number (with country code)</small>
+                {/* <small>Enter 10-12 digit phone number (with country code)</small> */}
               </div>
               <div className="form-group">
                 <label>MPIN</label>
@@ -245,7 +245,7 @@ const Login = () => {
                   maxLength="6"
                   pattern="[0-9]{4,6}"
                 />
-                <small>Enter 4-6 digit MPIN</small>
+                {/* <small>Enter 4-6 digit MPIN</small> */}
               </div>
             </>
           )}

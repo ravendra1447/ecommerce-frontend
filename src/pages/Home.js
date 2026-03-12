@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
+import ProductCardSlider from '../components/ProductCardSlider';
 import RecentlyViewedSection from '../components/RecentlyViewed';
 import Footer from '../components/Footer';
 import { getImageUrl } from '../utils/config';
@@ -132,6 +133,25 @@ const Home = () => {
 
           {/* Right Column - Products */}
           <div className="products-main-alibaba">
+            {/* All Products Section - Vertical Scroll */}
+            {featuredProducts.length > 0 && (
+              <div className="products-section-alibaba">
+                <div className="section-header-alibaba">
+                  <div>
+                    <h2 className="section-title-alibaba">All Products</h2>
+                    <p className="section-subtitle-alibaba">Browse our complete collection</p>
+                  </div>
+                </div>
+                <div className="products-vertical-grid">
+                  {featuredProducts.map(product => (
+                    <div key={product._id || product.id} className="product-vertical-item">
+                      <ProductCardSlider product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Recommended for your business Section - Alibaba Style */}
             <div className="recommended-business-alibaba">
               <h2 className="recommended-title-alibaba">Recommended for your business</h2>
@@ -289,66 +309,7 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Top Deals Section - Horizontal Scroll */}
-            {featuredProducts.length > 0 && (
-              <div className="products-section-alibaba">
-                <div className="section-header-alibaba">
-                  <div>
-                    <h2 className="section-title-alibaba">Top Deals</h2>
-                    <p className="section-subtitle-alibaba">Score the lowest prices on Bangkok Mart</p>
-                  </div>
-                  <Link to="/products" className="view-all-alibaba">View more →</Link>
-                </div>
-                <div className="products-scroll-alibaba">
-                  {featuredProducts.slice(0, 12).map(product => (
-                    <div key={product._id || product.id} className="product-scroll-item">
-                      <ProductCard product={product} showWishlist={true} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Top Ranking Section - Horizontal Scroll */}
-            {trendingProducts.length > 0 && (
-              <div className="products-section-alibaba">
-                <div className="section-header-alibaba">
-                  <div>
-                    <h2 className="section-title-alibaba">Top Ranking</h2>
-                    <p className="section-subtitle-alibaba">Navigate trends with data-driven rankings</p>
-                  </div>
-                  <Link to="/products?sortBy=rating" className="view-all-alibaba">View more →</Link>
-                </div>
-                <div className="products-scroll-alibaba">
-                  {trendingProducts.slice(0, 12).map(product => (
-                    <div key={product._id || product.id} className="product-scroll-item">
-                      <ProductCard product={product} showWishlist={true} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* New Arrivals Section - Horizontal Scroll */}
-            {newArrivals.length > 0 && (
-              <div className="products-section-alibaba">
-                <div className="section-header-alibaba">
-                  <div>
-                    <h2 className="section-title-alibaba">New Arrivals</h2>
-                    <p className="section-subtitle-alibaba">Stay ahead with the latest offerings</p>
-                  </div>
-                  <Link to="/products?sortBy=newest" className="view-all-alibaba">View more →</Link>
-                </div>
-                <div className="products-scroll-alibaba">
-                  {newArrivals.slice(0, 12).map(product => (
-                    <div key={product._id || product.id} className="product-scroll-item">
-                      <ProductCard product={product} showWishlist={true} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+                      </div>
         </div>
       </div>
 

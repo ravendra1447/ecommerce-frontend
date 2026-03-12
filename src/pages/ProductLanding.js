@@ -18,16 +18,6 @@ const ProductLanding = () => {
   const [isCatalogBased, setIsCatalogBased] = useState(false);
   const loadingRef = useRef(false);
 
-  useEffect(() => {
-    // Reset on product change
-    setCategoryProducts([]);
-    setOffset(0);
-    setHasMore(false);
-    setLoading(true);
-    loadingRef.current = false;
-    fetchProductAndCategory();
-  }, [id, fetchProductAndCategory]);
-
   const fetchProductAndCategory = useCallback(async (loadMore = false) => {
     // Prevent duplicate calls
     if (loadingRef.current && loadMore) return;
@@ -90,6 +80,16 @@ const ProductLanding = () => {
       loadingRef.current = false;
     }
   }, [id, offset, navigate]);
+
+  useEffect(() => {
+    // Reset on product change
+    setCategoryProducts([]);
+    setOffset(0);
+    setHasMore(false);
+    setLoading(true);
+    loadingRef.current = false;
+    fetchProductAndCategory();
+  }, [id, fetchProductAndCategory]);
 
   // Infinite scroll handler - only for catalog-based products
   useEffect(() => {

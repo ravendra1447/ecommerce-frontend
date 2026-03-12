@@ -105,19 +105,14 @@ const Navbar = () => {
         <div className="navbar-header">
           <div className="navbar-header-container">
             <Link to="/" className="navbar-logo">
-              <h1>Bangkok Mart</h1>
+              <h1>Bangkok <span>Mart</span></h1>
             </Link>
             
             <div className="navbar-header-right">
               <div className="navbar-utility">
-                <div className="utility-item">
-                  <span>Deliver to:</span>
+                <div className="utility-item location-combined">
                   <span className="flag-icon">🇮🇳</span>
-                  <span>IN</span>
-                </div>
-                <div className="utility-item">
-                  <span className="globe-icon">🌐</span>
-                  <span>English-INR</span>
+                  <span>Deliver to India</span>
                 </div>
                 <Link to="/cart" className="utility-item cart-utility" style={{ position: 'relative' }}>
                   <span className="cart-icon">🛒</span>
@@ -161,7 +156,7 @@ const Navbar = () => {
               >
                 <Link 
                   to="/app" 
-                  className="secondary-link active" 
+                  className="secondary-link" 
                   onClick={(e) => {
                     const isMobile = window.innerWidth <= 768;
                     if (isMobile) {
@@ -170,7 +165,7 @@ const Navbar = () => {
                     }
                   }}
                 >
-                  App
+                  Bangkok Mart
                 </Link>
                 {showAppDropdown && (
                   <div className="app-dropdown">

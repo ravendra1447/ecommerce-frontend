@@ -21,6 +21,9 @@ const Checkout = () => {
     paymentMethod: 'COD',
     upiId: ''
   });
+  const [formErrors, setFormErrors] = useState({});
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [showUPIQR, setShowUPIQR] = useState(false);
   const [upiQRCode, setUpiQRCode] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -30,10 +33,18 @@ const Checkout = () => {
   const [showCouponSection, setShowCouponSection] = useState(false);
   const [showOrderSummary, setShowOrderSummary] = useState(true);
   const [saveAddress, setSaveAddress] = useState(true);
+  const [hasSavedAddress, setHasSavedAddress] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [notificationShown, setNotificationShown] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
 
   useEffect(() => {
     fetchCart();
-    fetchUserProfile();
+    // Only fetch user profile once
+    const timer = setTimeout(() => {
+      fetchUserProfile();
+    }, 100); // Small delay to prevent race conditions
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -53,6 +64,12 @@ const Checkout = () => {
   };
 
   const fetchUserProfile = async () => {
+    // Prevent multiple calls
+    if (notificationShown) {
+      console.log('🚫 Notification already shown, skipping fetchUserProfile');
+      return;
+    }
+    
     try {
       const response = await api.get('/users/profile');
       if (response.data.address && response.data.address.street) {
@@ -64,7 +81,10 @@ const Checkout = () => {
           pincode: response.data.address.pincode || '',
           phone: response.data.phone || ''
         }));
-        // Show a subtle notification that address was auto-filled
+        setHasSavedAddress(true);
+        setShowAddressForm(false); // Hide form if address exists
+        setNotificationShown(true); // Mark notification as shown immediately
+        // Show a single notification that address was auto-filled
         toast.info('✓ Address auto-filled from your profile', { 
           autoClose: 3000,
           position: 'top-center'
@@ -77,10 +97,106 @@ const Checkout = () => {
   };
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear errors for this field
+    setFormErrors(prev => ({
+      ...prev,
+      [name]: ''
+    }));
+    
+    // Address suggestions for pincode
+    if (name === 'pincode' && value.length === 6) {
+      fetchAddressSuggestions(value);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.street.trim()) {
+      errors.street = 'Street address is required';
+    }
+    
+    if (!formData.city.trim()) {
+      errors.city = 'City is required';
+    }
+    
+    if (!formData.state.trim()) {
+      errors.state = 'State is required';
+    }
+    
+    if (!formData.pincode.trim()) {
+      errors.pincode = 'Pincode is required';
+    } else if (!/^[0-9]{6}$/.test(formData.pincode)) {
+      errors.pincode = 'Please enter a valid 6-digit pincode';
+    }
+    
+    if (!formData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid 10-digit phone number';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const fetchAddressSuggestions = async (pincode) => {
+    try {
+      // Mock API call - replace with actual API
+      const mockSuggestions = [
+        { street: 'Main Road', city: formData.city || 'New Delhi', state: 'Delhi', pincode },
+        { street: 'Cross Street', city: formData.city || 'Mumbai', state: 'Maharashtra', pincode },
+        { street: 'Park Avenue', city: formData.city || 'Bangalore', state: 'Karnataka', pincode }
+      ];
+      setAddressSuggestions(mockSuggestions);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Error fetching address suggestions:', error);
+    }
+  };
+
+  const handleEditAddress = () => {
+    setShowAddressForm(true);
+    setIsEditingAddress(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (hasSavedAddress) {
+      setShowAddressForm(false);
+      setIsEditingAddress(false);
+    }
+  };
+
+  const handleSaveAddress = () => {
+    if (validateForm()) {
+      setShowAddressForm(false);
+      setIsEditingAddress(false);
+      // Show a single notification that address was updated
+      toast.info('✓ Address updated successfully!', { 
+        autoClose: 3000,
+        position: 'top-center'
+      });
+    }
+  };
+
+  const selectAddressSuggestion = (suggestion) => {
+    setFormData({
+      ...formData,
+      street: suggestion.street,
+      city: suggestion.city,
+      state: suggestion.state,
+      pincode: suggestion.pincode
+    });
+    setShowSuggestions(false);
+    setFormErrors({});
   };
 
   const handlePaymentMethodChange = async (method) => {
@@ -259,8 +375,8 @@ const Checkout = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.street || !formData.city || !formData.state || !formData.pincode) {
-      toast.error('Please fill in all address fields');
+    if (!validateForm()) {
+      toast.error('Please fill in all required fields correctly');
       return;
     }
 
@@ -439,210 +555,280 @@ const Checkout = () => {
     <div className="checkout-page">
       <div className="checkout-container">
         <div className="checkout-form-section">
-          <h2>Shipping Address</h2>
-          <form onSubmit={handleSubmit} className="checkout-form">
-            <div className="form-group">
-              <label>Street Address</label>
-              <input
-                type="text"
-                name="street"
-                value={formData.street}
-                onChange={handleInputChange}
-                required
-                placeholder="House/Flat No., Street"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>City</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>State</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Pincode</label>
-                <input
-                  type="text"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleInputChange}
-                  required
-                  pattern="[0-9]{6}"
-                  maxLength="6"
-                />
-              </div>
-              <div className="form-group">
-                <label>Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  pattern="[0-9]{10}"
-                  maxLength="10"
-                />
-              </div>
-            </div>
-
-            <div className="form-group save-address-group">
-              <label className="save-address-checkbox">
-                <input
-                  type="checkbox"
-                  checked={saveAddress}
-                  onChange={(e) => setSaveAddress(e.target.checked)}
-                />
-                <span className="save-address-text">
-                  💾 Save this address for future orders
-                </span>
-              </label>
-              <p className="save-address-hint">
-                Your address will be auto-filled next time you checkout
-              </p>
-            </div>
-
-            <div className="form-group payment-method-group">
-              <label className="payment-method-label">Payment Method</label>
-              <div className="payment-methods">
-                <label className="payment-option">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="COD"
-                    checked={formData.paymentMethod === 'COD'}
-                    onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                    style={{ display: 'none' }}
-                  />
-                  <div className="payment-option-content">
-                    <div className="payment-option-header">
-                      <span className="payment-icon">💵</span>
-                    </div>
-                    <div className="payment-option-description">
-                      When you place an order, it will be sent to WhatsApp. When we send the payment QR via WhatsApp, the customer will receive a message.
-                    </div>
+          {/* Hide shipping address section completely on mobile */}
+          <div className="desktop-only">
+            <h2>Shipping Address</h2>
+            
+            {/* Show saved address card if address exists and form is hidden */}
+            {hasSavedAddress && !showAddressForm && (
+              <div className="saved-address-card">
+                <div className="address-display">
+                  <div className="address-info">
+                    <h4>📍 Delivery Address</h4>
+                    <p><strong>{formData.street}</strong></p>
+                    <p>{formData.city}, {formData.state} - {formData.pincode}</p>
+                    <p>📱 {formData.phone}</p>
                   </div>
-                </label>
-                
-                {/* Hidden payment options - kept for future use */}
-                <div style={{ display: 'none' }}>
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="Credit Card"
-                      checked={formData.paymentMethod === 'Credit Card'}
-                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                    />
-                    <span>💳 Credit Card</span>
-                  </label>
-                  
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="Debit Card"
-                      checked={formData.paymentMethod === 'Debit Card'}
-                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                    />
-                    <span>💳 Debit Card</span>
-                  </label>
-                  
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="UPI"
-                      checked={formData.paymentMethod === 'UPI'}
-                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                    />
-                    <span>📱 UPI</span>
-                  </label>
-                  
-                  <label className="payment-option">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="QR Code"
-                      checked={formData.paymentMethod === 'QR Code'}
-                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                    />
-                    <span>📷 QR Code</span>
-                  </label>
+                  <button 
+                    type="button"
+                    className="btn-edit-address"
+                    onClick={handleEditAddress}
+                  >
+                    ✏️ Edit
+                  </button>
                 </div>
               </div>
+            )}
 
-              {/* Hidden UPI and Payment Info sections - kept for future use */}
-              <div style={{ display: 'none' }}>
-                {/* UPI ID Input */}
-                {(formData.paymentMethod === 'UPI') && (
-                  <div className="upi-input-container" style={{ marginTop: '1rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                      Enter UPI ID (Optional)
-                    </label>
+            {/* Show address form when needed */}
+            {(!hasSavedAddress || showAddressForm) && (
+              <form onSubmit={handleSubmit} className="checkout-form">
+                <div className="form-group">
+                  <label>Street Address</label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={formData.street}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="House/Flat No., Street"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>City</label>
                     <input
                       type="text"
-                      placeholder="yourname@upi or yourname@paytm"
-                      value={formData.upiId || ''}
-                      onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                      style={{ width: '100%', padding: '0.8rem', border: '1px solid #ddd', borderRadius: '5px' }}
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      required
                     />
-                    <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem' }}>
-                      If not provided, default UPI ID will be used
-                    </p>
+                  </div>
+                  <div className="form-group">
+                    <label>State</label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ position: 'relative' }}>
+                    <label>Pincode</label>
+                    <input
+                      type="text"
+                      name="pincode"
+                      value={formData.pincode}
+                      onChange={handleInputChange}
+                      required
+                      pattern="[0-9]{6}"
+                      maxLength="6"
+                      className={formErrors.pincode ? 'error' : ''}
+                    />
+                    {formErrors.pincode && (
+                      <span className="error-message">{formErrors.pincode}</span>
+                    )}
+                    {showSuggestions && addressSuggestions.length > 0 && (
+                      <div className="address-suggestions">
+                        <div className="suggestions-header">📍 Suggested Addresses</div>
+                        {addressSuggestions.map((suggestion, index) => (
+                          <div 
+                            key={index} 
+                            className="suggestion-item"
+                            onClick={() => selectAddressSuggestion(suggestion)}
+                          >
+                            <div className="suggestion-street">{suggestion.street}</div>
+                            <div className="suggestion-details">
+                              {suggestion.city}, {suggestion.state} - {suggestion.pincode}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Phone</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                    />
+                  </div>
+                </div>
+
+                {hasSavedAddress && (
+                  <div className="form-group">
+                    <button
+                      type="button"
+                      className="btn-cancel-edit"
+                      onClick={handleCancelEdit}
+                    >
+                      ❌ Cancel Edit
+                    </button>
                   </div>
                 )}
 
-                {/* QR Code Display */}
-                {showUPIQR && upiQRCode && (
-                  <div className="upi-qr-container">
-                    <h4>Scan QR Code to Pay</h4>
-                    <img src={upiQRCode} alt="UPI QR Code" style={{ maxWidth: '300px', margin: '10px 0' }} />
-                    <p>Amount: ₹{calculateTotal().toFixed(2)}</p>
-                    <p style={{ fontSize: '12px', color: '#666' }}>
-                      Scan this QR code with any UPI app to complete payment
-                    </p>
-                  </div>
-                )}
+                <div className="form-group save-address-group">
+                  <label className="save-address-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                    />
+                    <span className="save-address-text">
+                      💾 Save this address for future orders
+                    </span>
+                  </label>
+                  <p className="save-address-hint">
+                    Your address will be auto-filled next time you checkout
+                  </p>
+                </div>
 
-                {/* Payment Info */}
-                {(formData.paymentMethod === 'Credit Card' || formData.paymentMethod === 'Debit Card' || formData.paymentMethod === 'UPI') && (
-                  <div className="payment-info" style={{ marginTop: '1rem', padding: '1rem', background: '#e3f2fd', borderRadius: '8px', fontSize: '14px' }}>
-                    <p style={{ margin: 0, color: '#1976d2' }}>
-                      {formData.paymentMethod === 'UPI' 
-                        ? '📱 UPI payment will open in a popup. Enter your UPI ID if needed.'
-                        : '💳 Card details will be asked in payment popup. Enter card number, CVV, and expiry date.'}
-                    </p>
+                <div className="form-group payment-method-group">
+                  <label className="payment-method-label">Payment Method</label>
+                  <div className="payment-methods">
+                    <label className="payment-option">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="COD"
+                        checked={formData.paymentMethod === 'COD'}
+                        onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        style={{ display: 'none' }}
+                      />
+                      <div className="payment-option-content">
+                        <div className="payment-option-header">
+                          <span className="payment-icon">💵</span>
+                        </div>
+                        <div className="payment-option-description">
+                          When you place an order, it will be sent to WhatsApp. When we send the payment QR via WhatsApp, the customer will receive a message.
+                        </div>
+                      </div>
+                    </label>
+                    
+                    {/* Hidden payment options - kept for future use */}
+                    <div style={{ display: 'none' }}>
+                      <label className="payment-option">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="Credit Card"
+                          checked={formData.paymentMethod === 'Credit Card'}
+                          onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        />
+                        <span>💳 Credit Card</span>
+                      </label>
+                      
+                      <label className="payment-option">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="Debit Card"
+                          checked={formData.paymentMethod === 'Debit Card'}
+                          onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        />
+                        <span>💳 Debit Card</span>
+                      </label>
+                      
+                      <label className="payment-option">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="UPI"
+                          checked={formData.paymentMethod === 'UPI'}
+                          onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        />
+                        <span>📱 UPI</span>
+                      </label>
+                      
+                      <label className="payment-option">
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="QR Code"
+                          checked={formData.paymentMethod === 'QR Code'}
+                          onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        />
+                        <span>📷 QR Code</span>
+                      </label>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            <button
-              type="submit"
-              className="btn-place-order"
-              disabled={orderLoading}
-            >
-              {orderLoading ? 'Placing Order...' : 'Place Order'}
-            </button>
-          </form>
+                  {/* Hidden UPI and Payment Info sections - kept for future use */}
+                  <div style={{ display: 'none' }}>
+                    {/* UPI ID Input */}
+                    {(formData.paymentMethod === 'UPI') && (
+                      <div className="upi-input-container" style={{ marginTop: '1rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                          Enter UPI ID (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="yourname@upi or yourname@paytm"
+                          value={formData.upiId || ''}
+                          onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
+                          style={{ width: '100%', padding: '0.8rem', border: '1px solid #ddd', borderRadius: '5px' }}
+                        />
+                        <p style={{ fontSize: '12px', color: '#666', marginTop: '0.5rem' }}>
+                          If not provided, default UPI ID will be used
+                        </p>
+                      </div>
+                    )}
+
+                    {/* QR Code Display */}
+                    {showUPIQR && upiQRCode && (
+                      <div className="upi-qr-container">
+                        <h4>Scan QR Code to Pay</h4>
+                        <img src={upiQRCode} alt="UPI QR Code" style={{ maxWidth: '300px', margin: '10px 0' }} />
+                        <p>Amount: ₹{calculateTotal().toFixed(2)}</p>
+                        <p style={{ fontSize: '12px', color: '#666' }}>
+                          Scan this QR code with any UPI app to complete payment
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Payment Info */}
+                    {(formData.paymentMethod === 'Credit Card' || formData.paymentMethod === 'Debit Card' || formData.paymentMethod === 'UPI') && (
+                      <div className="payment-info" style={{ marginTop: '1rem', padding: '1rem', background: '#e3f2fd', borderRadius: '8px', fontSize: '14px' }}>
+                        <p style={{ margin: 0, color: '#1976d2' }}>
+                          {formData.paymentMethod === 'UPI' 
+                            ? '📱 UPI payment will open in a popup. Enter your UPI ID if needed.'
+                            : '💳 Card details will be asked in payment popup. Enter card number, CVV, and expiry date.'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="desktop-order-actions">
+                  <button
+                    type="button"
+                    className="btn-show-total-desktop"
+                    onClick={() => setShowOrderSummary(!showOrderSummary)}
+                  >
+                    Total: ₹{calculateTotal().toFixed(2)}
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-place-order-desktop"
+                    disabled={orderLoading}
+                  >
+                    {orderLoading ? 'Placing Order...' : 'Place Order'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
 
         <div className="checkout-summary">
@@ -652,108 +838,377 @@ const Checkout = () => {
           </div>
           {showOrderSummary && (
             <div className="order-summary-content">
-          {/* Coupon Section - Toggle Style */}
-          {appliedCoupon ? (
-            <div className="coupon-applied-badge">
-              <div className="coupon-badge-content">
-                <div className="coupon-badge-info">
-                  <span className="coupon-badge-code">✓ {appliedCoupon.code}</span>
-                  <span className="coupon-badge-discount">-₹{discountAmount.toFixed(2)}</span>
-                </div>
+              {/* Order Items Section */}
+              <div className="order-items" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)', padding: '1.25rem', borderRadius: '16px', border: '2px solid #f0f0f0', marginBottom: '1.25rem', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
+                <h3 style={{ margin: '0 0 1rem 0', color: '#333', fontSize: '1.2rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🛒 Order Items ({cart.items.length})
+                </h3>
+                {cart.items.map(item => (
+                  <div key={item._id} className="order-item" style={{ padding: '1rem 0', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div className="order-item-image" style={{ width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #f0f0f0', background: '#fff' }}>
+                      {item.product.images && item.product.images.length > 0 ? (
+                        <img 
+                          src={getImageUrl(item.product.images[0])} 
+                          alt={item.product.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/100x100?text=No+Image';
+                          }}
+                        />
+                      ) : (
+                        <div className="placeholder-image" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', color: '#999', fontSize: '0.8rem' }}>No Image</div>
+                      )}
+                    </div>
+                    <div className="order-item-info" style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontSize: '1rem', fontWeight: '700', lineHeight: '1.4' }}>{item.product.name}</h4>
+                      <p style={{ margin: 0, color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>Qty: {item.quantity} × ₹{item.product.price}</p>
+                    </div>
+                    <div className="order-item-total" style={{ fontSize: '1.1rem', fontWeight: '700', color: '#333', minWidth: '80px', textAlign: 'right' }}>
+                      ₹{(item.product.price * item.quantity).toFixed(2)}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveCoupon();
-                }}
-                className="btn-remove-coupon-badge"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <div className="coupon-toggle-section">
-              <button
-                type="button"
-                className="coupon-toggle-btn"
-                onClick={() => setShowCouponSection(!showCouponSection)}
-              >
-                <span>Have a coupon?</span>
-                <span className="coupon-toggle-icon">{showCouponSection ? '▲' : '▼'}</span>
-              </button>
-              {showCouponSection && (
-                <div className="coupon-input-container">
-                  <div className="coupon-input-group">
-                    <input
-                      type="text"
-                      placeholder="Enter coupon code"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      className="coupon-input"
-                      autoFocus
-                    />
-                    <button
+
+              {/* Shipping Address Section */}
+              {isEditingAddress ? (
+                <div className="shipping-address-summary">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      ✏️ Edit Delivery Address
+                    </h4>
+                    <button 
                       type="button"
-                      onClick={handleApplyCoupon}
-                      disabled={couponLoading || !couponCode.trim()}
-                      className="btn-apply-coupon"
+                      onClick={handleCancelEdit}
+                      style={{
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem'
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                        e.target.style.transform = 'translateY(0)';
+                      }}
                     >
-                      {couponLoading ? '...' : 'Apply'}
+                      ❌ Cancel
+                    </button>
+                  </div>
+                  <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)', padding: '1rem', borderRadius: '12px', border: '2px solid #f0f0f0', marginBottom: '1rem' }}>
+                    <div className="form-group">
+                      <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontSize: '0.9rem', fontWeight: '600' }}>Street Address</label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={formData.street}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="House/Flat No., Street"
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1rem',
+                          fontSize: '16px',
+                          borderRadius: '8px',
+                          border: '1px solid #ddd',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontSize: '0.9rem', fontWeight: '600' }}>City</label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.875rem 1rem',
+                            fontSize: '16px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontSize: '0.9rem', fontWeight: '600' }}>State</label>
+                        <input
+                          type="text"
+                          name="state"
+                          value={formData.state}
+                          onChange={handleInputChange}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '0.875rem 1rem',
+                            fontSize: '16px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontSize: '0.9rem', fontWeight: '600' }}>Pincode</label>
+                        <input
+                          type="text"
+                          name="pincode"
+                          value={formData.pincode}
+                          onChange={handleInputChange}
+                          required
+                          pattern="[0-9]{6}"
+                          maxLength="6"
+                          style={{
+                            width: '100%',
+                            padding: '0.875rem 1rem',
+                            fontSize: '16px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#333', fontSize: '0.9rem', fontWeight: '600' }}>Phone</label>
+                        <input
+                          type="tel"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          required
+                          pattern="[0-9]{10}"
+                          maxLength="10"
+                          style={{
+                            width: '100%',
+                            padding: '0.875rem 1rem',
+                            fontSize: '16px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            boxSizing: 'border-box'
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={handleSaveAddress}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(22, 163, 74, 0.3)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #15803d 0%, #14532d 100%)';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+                        e.target.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      💾 Save Address
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          <div className="order-items">
-            {cart.items.map(item => (
-              <div key={item._id} className="order-item">
-                <div className="order-item-image">
-                  {item.product.images && item.product.images.length > 0 ? (
-                    <img 
-                      src={getImageUrl(item.product.images[0])} 
-                      alt={item.product.name}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/100x100?text=No+Image';
+              ) : (
+                <div className="shipping-address-summary">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      📍 Delivery Address
+                    </h4>
+                    <button 
+                      type="button"
+                      onClick={handleEditAddress}
+                      style={{
+                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem'
                       }}
-                    />
+                      onMouseOver={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #15803d 0%, #14532d 100%)';
+                        e.target.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+                        e.target.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      ✏️ Edit
+                    </button>
+                  </div>
+                  <div className="address-summary-info" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)', padding: '1rem', borderRadius: '12px', border: '2px solid #f0f0f0' }}>
+                    <p style={{ margin: '0.375rem 0', color: '#1e293b', fontSize: '0.9rem', fontWeight: '700' }}>
+                      <strong>{formData.street}</strong>
+                    </p>
+                    <p style={{ margin: '0.375rem 0', color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>
+                      {formData.city}, {formData.state} - {formData.pincode}
+                    </p>
+                    <p style={{ margin: '0.375rem 0', color: '#6b7280', fontSize: '0.9rem', fontWeight: '500' }}>
+                      📱 {formData.phone}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Method Section */}
+              <div className="payment-method-summary">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    💳 Payment Method
+                  </h4>
+                </div>
+                <div className="payment-summary-info" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)', padding: '1rem', borderRadius: '12px', border: '2px solid #f0f0f0' }}>
+                  {formData.paymentMethod === 'COD' ? (
+                    <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
+                      <span className="payment-icon" style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3))' }}>💵</span>
+                      <span>Cash on Delivery</span>
+                    </div>
+                  ) : formData.paymentMethod === 'QR Code' ? (
+                    <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
+                      <span className="payment-icon" style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3))' }}>📷</span>
+                      <span>QR Code Payment</span>
+                    </div>
+                  ) : formData.paymentMethod === 'UPI' ? (
+                    <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
+                      <span className="payment-icon" style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3))' }}>📱</span>
+                      <span>UPI Payment</span>
+                    </div>
                   ) : (
-                    <div className="placeholder-image">No Image</div>
+                    <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
+                      <span className="payment-icon" style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3))' }}>💳</span>
+                      <span>{formData.paymentMethod}</span>
+                    </div>
                   )}
                 </div>
-                <div className="order-item-info">
-                  <h4>{item.product.name}</h4>
-                  <p>Qty: {item.quantity} × ₹{item.product.price}</p>
+              </div>
+
+              {/* Coupon Section - Toggle Style */}
+              {appliedCoupon ? (
+                <div className="coupon-applied-badge">
+                  <div className="coupon-badge-content">
+                    <div className="coupon-badge-info">
+                      <span className="coupon-badge-code">✓ {appliedCoupon.code}</span>
+                      <span className="coupon-badge-discount">-₹{discountAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveCoupon();
+                    }}
+                    className="btn-remove-coupon-badge"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div className="order-item-total">
-                  ₹{(item.product.price * item.quantity).toFixed(2)}
+              ) : (
+                <div className="coupon-toggle-section">
+                  <button
+                    type="button"
+                    className="coupon-toggle-btn"
+                    onClick={() => setShowCouponSection(!showCouponSection)}
+                  >
+                    <span>Have a coupon?</span>
+                    <span className="coupon-toggle-icon">{showCouponSection ? '▲' : '▼'}</span>
+                  </button>
+                  {showCouponSection && (
+                    <div className="coupon-input-container">
+                      <div className="coupon-input-group">
+                        <input
+                          type="text"
+                          placeholder="Enter coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="coupon-input"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          className="btn-apply-coupon"
+                        >
+                          {couponLoading ? '...' : 'Apply'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Price Summary Section */}
+              <div className="order-summary-total">
+                <div className="summary-row">
+                  <span>Subtotal:</span>
+                  <span>₹{calculateSubtotal().toFixed(2)}</span>
+                </div>
+                {appliedCoupon && (
+                  <div className="summary-row discount-row">
+                    <span>Discount ({appliedCoupon.code}):</span>
+                    <span className="discount-amount">-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="summary-row">
+                  <span>Shipping:</span>
+                  <span>Free</span>
+                </div>
+                <div className="summary-row total">
+                  <span>Total:</span>
+                  <span>₹{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="order-summary-total">
-            <div className="summary-row">
-              <span>Subtotal:</span>
-              <span>₹{calculateSubtotal().toFixed(2)}</span>
-            </div>
-            {appliedCoupon && (
-              <div className="summary-row discount-row">
-                <span>Discount ({appliedCoupon.code}):</span>
-                <span className="discount-amount">-₹{discountAmount.toFixed(2)}</span>
+
+              {/* Place Order Button */}
+              <div className="order-summary-actions">
+                <button
+                  type="submit"
+                  className="btn-place-order-summary"
+                  disabled={orderLoading}
+                  onClick={handleSubmit}
+                >
+                  {orderLoading ? 'Placing Order...' : 'Place Order'}
+                </button>
               </div>
-            )}
-            <div className="summary-row">
-              <span>Shipping:</span>
-              <span>Free</span>
-            </div>
-            <div className="summary-row total">
-              <span>Total:</span>
-              <span>₹{calculateTotal().toFixed(2)}</span>
-            </div>
-          </div>
             </div>
           )}
         </div>

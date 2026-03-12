@@ -502,9 +502,11 @@
 .product-image-wrapper {
   position: relative;
   width: 100%;
-  height: 200px;
-  overflow: hidden;
+  height: 320px;
   background: #f8f9fa;
+  overflow: hidden;
+  min-height: 320px;
+  aspect-ratio: 1/1;
 }
 
 .product-image {
@@ -671,9 +673,10 @@
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Tablets and up */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
   }
 }
 
@@ -711,7 +714,7 @@
   }
 
   .products-grid {
-    grid-template-columns: 1fr; /* Mobile: 1 card per row */
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1rem;
   }
 
@@ -748,7 +751,7 @@
   }
 
   .products-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   }
 
   .btn-add-to-cart,
@@ -842,6 +845,11 @@
   overflow: hidden;
   max-width: 1000px;
   margin: 0 auto;
+  min-width: 320px;
+  max-width: 400px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .hero-product-card:hover {
@@ -877,16 +885,14 @@
   overflow: hidden;
   background: #f8f9fa;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-height: 320px;
+  aspect-ratio: 1/1;
 }
 
 .hero-product-image {
   width: 100%;
-  height: auto;
-  max-height: 350px;
-  min-height: 300px;
+  height: 100%;
   object-fit: cover;
-  display: block;
-  transition: opacity 0.3s ease;
 }
 
 /* Image Navigation Buttons */
@@ -1163,7 +1169,7 @@
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }

@@ -92,20 +92,22 @@ const Cart = () => {
           <h2 className="cart-title">Shopping Cart ({cart.items.length} items)</h2>
           {cart.items.map(item => (
             <div key={item._id} className="cart-item">
-              <Link to={`/product/${item.product._id || item.product.id}`} className="cart-item-image">
-                {item.product.images && item.product.images.length > 0 ? (
-                  <img 
-                    src={getImageUrl(item.product.images[0])} 
-                    alt={item.product.name}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';
-                    }}
-                  />
-                ) : (
-                  <div className="placeholder-image">No Image</div>
-                )}
-              </Link>
+              <div className="cart-item-image">
+                <Link to={`/product/${item.product._id || item.product.id}`}>
+                  {item.product.images && item.product.images.length > 0 ? (
+                    <img 
+                      src={getImageUrl(item.product.images[0])} 
+                      alt={item.product.name}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';
+                      }}
+                    />
+                  ) : (
+                    <div className="placeholder-image">No Image</div>
+                  )}
+                </Link>
+              </div>
               <div className="cart-item-info">
                 <Link to={`/product/${item.product._id || item.product.id}`}>
                   <h3>{item.product.name}</h3>
@@ -129,12 +131,13 @@ const Cart = () => {
                 <button
                   onClick={() => removeItem(item._id)}
                   className="btn-remove"
+                  title="Remove item"
                 >
                   Remove
                 </button>
-              </div>
-              <div className="cart-item-total">
-                ₹{(Number(item.product.price || 0) * item.quantity).toFixed(2)}
+                <div className="cart-item-total">
+                  ₹{(Number(item.product.price || 0) * item.quantity).toFixed(2)}
+                </div>
               </div>
             </div>
           ))}

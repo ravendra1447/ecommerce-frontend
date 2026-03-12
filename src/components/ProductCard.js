@@ -229,7 +229,7 @@ const ProductCard = ({ product, showWishlist = true }) => {
               );
             })()}
             <div className="views-info">
-              <span>👁️ {product.viewCount || product.view_count || 0} views</span>
+              <span>👁️  {product.viewCount || product.view_count || 0} views</span>
             </div>
           </div>
 
@@ -261,18 +261,26 @@ const ProductCard = ({ product, showWishlist = true }) => {
               )}
             </div>
             
-            {/* Rating - Show only if rating >= 3 (handle null, undefined, 0) */}
+            {/* Rating - Modern Star Rating */}
             {(() => {
-              const rating = product.rating !== null && product.rating !== undefined 
+              const ratingValue = product.rating !== null && product.rating !== undefined 
                 ? Number(product.rating) 
                 : 0;
-              return !isNaN(rating) && rating >= 3 && rating > 0;
-            })() && (
-              <div className="product-card-rating">
-                <span className="rating-stars">{'⭐'.repeat(Math.round(Number(product.rating)))}</span>
-                <span className="rating-count">({Number(product.rating).toFixed(1)})</span>
-              </div>
-            )}
+              return !isNaN(ratingValue) && ratingValue >= 3 && ratingValue > 0 && (
+                <div className="product-card-rating">
+                  <div className="modern-rating">
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star} className={star <= Math.round(ratingValue) ? 'star-filled' : 'star-empty'}>
+                          {star <= Math.round(ratingValue) ? '⭐' : '☆'}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="rating-count">{Number(product.rating).toFixed(1)}</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Stock Status */}

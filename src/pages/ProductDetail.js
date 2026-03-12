@@ -16,6 +16,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [isZooming, setIsZooming] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [showZoomLens, setShowZoomLens] = useState(false);
@@ -23,7 +24,8 @@ const ProductDetail = () => {
   const [lastTap, setLastTap] = useState(0);
   const [mobilePinchScale, setMobilePinchScale] = useState(1);
   const [mobilePanPosition, setMobilePanPosition] = useState({ x: 0, y: 0 });
-  const [touchDistance, setTouchDistance] = useState(null);
+  const [initialPinchDistance, setInitialPinchDistance] = useState(null);
+  const [initialPinchScale, setInitialPinchScale] = useState(1);
   const [showZoomHint, setShowZoomHint] = useState(false);
   const [showDesktopZoomHint, setShowDesktopZoomHint] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
@@ -34,6 +36,8 @@ const ProductDetail = () => {
   const [lightboxTouchEnd, setLightboxTouchEnd] = useState({ x: 0, y: 0 });
   const [swipeDirection, setSwipeDirection] = useState(null);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [lightboxPinchDistance, setLightboxPinchDistance] = useState(null);
+  const [lightboxPinchScale, setLightboxPinchScale] = useState(1);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedVariant] = useState(null); // For size+color variants
@@ -168,17 +172,30 @@ const ProductDetail = () => {
   };
 
   const zoomIn = () => {
-    setLightboxZoomLevel(prev => Math.min(prev + 0.5, 3));
+    setLightboxZoomLevel(prev => {
+      const newZoom = Math.min(prev + 0.5, 3);
+      // Reset pan position when zooming in from 1x
+      if (prev === 1) {
+        setLightboxPanPosition({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
   };
 
   const zoomOut = () => {
     setLightboxZoomLevel(prev => {
       const newZoom = Math.max(prev - 0.5, 1);
+      // Reset pan position when zooming out to 1x
       if (newZoom === 1) {
         setLightboxPanPosition({ x: 0, y: 0 });
       }
       return newZoom;
     });
+  };
+
+  const resetZoom = () => {
+    setLightboxZoomLevel(1);
+    setLightboxPanPosition({ x: 0, y: 0 });
   };
 
   // Auto-open variation modal ONLY if query parameter is present
@@ -811,7 +828,14 @@ const ProductDetail = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="product-detail">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Loading product details...</div>
+        </div>
+      </div>
+    );
   }
 
   if (!product) {
@@ -857,90 +881,108 @@ const ProductDetail = () => {
         <div className="product-images">
           <div className="image-container-wrapper">
             <div 
-              className={`main-image ${showZoomLens ? 'zoom-lens-active' : ''}`}
-              onMouseEnter={() => setShowZoomBox(true)}
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                setZoomPosition({ x, y });
-                setShowZoomLens(true);
+              className="main-image"
+              onClick={() => {
+                openLightbox(selectedImage);
               }}
-              onMouseLeave={() => {
-                setShowZoomLens(false);
-                setShowZoomBox(false);
+              style={{
+                cursor: 'pointer',
+                position: 'relative'
               }}
               onTouchStart={(e) => {
+                e.preventDefault();
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 
                 if (e.touches.length === 1) {
-                  // Double tap detection
+                  // Single touch
                   if (tapLength < 300 && tapLength > 0) {
-                    e.preventDefault();
-                    // Toggle zoom on double tap
+                    // Double tap - toggle zoom with smooth animation
                     if (mobilePinchScale === 1) {
+                      // Zoom in to center with smooth transition
                       setMobilePinchScale(2.5);
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.touches[0].clientX - rect.left;
-                      const y = e.touches[0].clientY - rect.top;
-                      setMobilePanPosition({ 
-                        x: -(x * 1.5), 
-                        y: -(y * 1.5) 
-                      });
+                      setMobilePanPosition({ x: 0, y: 0 });
                     } else {
+                      // Zoom out with smooth transition
                       setMobilePinchScale(1);
                       setMobilePanPosition({ x: 0, y: 0 });
                     }
-                  } else {
-                    // Single touch for swipe
-                    setTouchStart(e.touches[0].clientX);
                   }
                   setLastTap(currentTime);
+                  setTouchStart(e.touches[0].clientX);
+                  setTouchEnd(e.touches[0].clientY);
                 } else if (e.touches.length === 2) {
-                  // Pinch zoom start
-                  e.preventDefault();
+                  // Pinch zoom start - calculate initial distance more accurately
                   const touch1 = e.touches[0];
                   const touch2 = e.touches[1];
                   const distance = Math.hypot(
                     touch2.clientX - touch1.clientX,
                     touch2.clientY - touch1.clientY
                   );
-                  setTouchDistance(distance);
+                  setInitialPinchDistance(distance);
+                  setInitialPinchScale(mobilePinchScale);
                 }
               }}
               onTouchMove={(e) => {
-                if (e.touches.length === 2 && touchDistance) {
-                  // Pinch zoom
-                  e.preventDefault();
+                e.preventDefault();
+                
+                if (e.touches.length === 2 && initialPinchDistance) {
+                  // Pinch zoom with improved scaling and bounds
                   const touch1 = e.touches[0];
                   const touch2 = e.touches[1];
-                  const distance = Math.hypot(
+                  const currentDistance = Math.hypot(
                     touch2.clientX - touch1.clientX,
                     touch2.clientY - touch1.clientY
                   );
-                  const scale = Math.min(Math.max((distance / touchDistance) * mobilePinchScale, 1), 4);
-                  setMobilePinchScale(scale);
+                  
+                  // Calculate scale with smoother limits and prevent stuck zoom
+                  const scaleFactor = currentDistance / initialPinchDistance;
+                  let newScale = scaleFactor * initialPinchScale;
+                  
+                  // Clamp scale to reasonable bounds
+                  newScale = Math.max(1, Math.min(4, newScale));
+                  
+                  // Apply smooth scaling with momentum
+                  setMobilePinchScale(newScale);
+                  
                 } else if (e.touches.length === 1 && mobilePinchScale > 1) {
-                  // Pan when zoomed
-                  e.preventDefault();
+                  // Pan when zoomed with improved tracking and bounds
                   if (touchStart !== null) {
                     const deltaX = e.touches[0].clientX - touchStart;
-                    const deltaY = e.touches[0].clientY - (touchEnd || touchStart);
-                    setMobilePanPosition(prev => ({
-                      x: prev.x + deltaX,
-                      y: prev.y + deltaY
-                    }));
+                    const deltaY = e.touches[0].clientY - touchStart;
+                    
+                    // Apply pan with damping for smoother movement
+                    const maxPan = 200; // Maximum pan distance
+                    setMobilePanPosition(prev => {
+                      const newX = prev.x + deltaX * 0.6; // Reduced damping for smoother feel
+                      const newY = prev.y + deltaY * 0.6;
+                      
+                      // Apply bounds to prevent image from going too far
+                      return {
+                        x: Math.max(-maxPan, Math.min(maxPan, newX)),
+                        y: Math.max(-maxPan, Math.min(maxPan, newY))
+                      };
+                    });
                   }
+                  
                   setTouchStart(e.touches[0].clientX);
                   setTouchEnd(e.touches[0].clientY);
                 } else if (e.touches.length === 1) {
+                  // Single touch for swipe (only when not zoomed)
                   setTouchEnd(e.touches[0].clientX);
                 }
               }}
               onTouchEnd={(e) => {
                 if (e.touches.length === 0) {
-                  setTouchDistance(null);
+                  // Reset pinch zoom state
+                  setInitialPinchDistance(null);
+                  setInitialPinchScale(1);
+                  
+                  // Auto-reset zoom if scale is too close to 1 (prevents stuck zoom)
+                  if (mobilePinchScale > 0.9 && mobilePinchScale < 1.1) {
+                    setMobilePinchScale(1);
+                    setMobilePanPosition({ x: 0, y: 0 });
+                  }
                   
                   // Handle swipe for image navigation (only if not zoomed)
                   if (touchStart !== null && touchEnd !== null && mobilePinchScale === 1) {
@@ -956,46 +998,47 @@ const ProductDetail = () => {
                     }
                   }
                   
+                  // Reset touch positions
                   setTouchStart(null);
                   setTouchEnd(null);
                 }
               }}
             >
               {product.images && product.images.length > 0 ? (
-                <>
-                  <img 
-                    src={getImageUrl(product.images[selectedImage])} 
-                    alt={product.name}
-                    style={{
-                      transform: mobilePinchScale > 1 
-                        ? `scale(${mobilePinchScale}) translate(${mobilePanPosition.x / mobilePinchScale}px, ${mobilePanPosition.y / mobilePinchScale}px)`
-                        : 'none',
-                      transition: mobilePinchScale === 1 ? 'transform 0.3s ease' : 'none',
-                      cursor: 'pointer'
-                    }}
-                    draggable={false}
-                    onClick={() => {
-                      if (mobilePinchScale === 1) {
-                        openLightbox(selectedImage);
-                      }
-                    }}
-                    onError={(e) => {
-                      const img = e.currentTarget;
-                      img.onerror = null;
-                      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                    }}
-                  />
-                  {showZoomLens && (
-                    <div 
-                      className="zoom-lens"
-                      style={{
-                        left: `${zoomPosition.x}%`,
-                        top: `${zoomPosition.y}%`,
-                        transform: 'translate(-50%, -50%)'
-                      }}
-                    />
-                  )}
-                </>
+                <img 
+                  src={getImageUrl(product.images[selectedImage])} 
+                  alt={product.name}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                    transform: mobilePinchScale > 1 
+                      ? `scale(${mobilePinchScale}) translate(${mobilePanPosition.x / mobilePinchScale}px, ${mobilePanPosition.y / mobilePinchScale}px)`
+                      : 'none',
+                    transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    cursor: mobilePinchScale > 1 ? 'grab' : 'pointer',
+                    transformOrigin: 'center center',
+                    display: 'block !important',
+                    opacity: '1 !important',
+                    visibility: 'visible !important'
+                  }}
+                  draggable={false}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openLightbox(selectedImage);
+                  }}
+                  onError={(e) => {
+                    console.error('Image failed to load:', getImageUrl(product.images[selectedImage]));
+                    const img = e.currentTarget;
+                    img.onerror = null;
+                    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                  }}
+                  onLoad={() => {
+                    console.log('Image loaded successfully:', getImageUrl(product.images[selectedImage]));
+                  }}
+                />
               ) : (
                 <div className="placeholder-image">No Image</div>
               )}
@@ -1003,14 +1046,28 @@ const ProductDetail = () => {
                 <>
                   <button 
                     className="image-nav-btn prev-btn"
-                    onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : product.images.length - 1)}
+                    onClick={() => {
+                    setSelectedImage(selectedImage > 0 ? selectedImage - 1 : product.images.length - 1);
+                    // Reset zoom when changing images
+                    setMobilePinchScale(1);
+                    setMobilePanPosition({ x: 0, y: 0 });
+                    setInitialPinchDistance(null);
+                    setInitialPinchScale(1);
+                  }}
                     aria-label="Previous image"
                   >
                     ‹
                   </button>
                   <button 
                     className="image-nav-btn next-btn"
-                    onClick={() => setSelectedImage(selectedImage < product.images.length - 1 ? selectedImage + 1 : 0)}
+                    onClick={() => {
+                      setSelectedImage(selectedImage < product.images.length - 1 ? selectedImage + 1 : 0);
+                      // Reset zoom when changing images
+                      setMobilePinchScale(1);
+                      setMobilePanPosition({ x: 0, y: 0 });
+                      setInitialPinchDistance(null);
+                      setInitialPinchScale(1);
+                    }}
                     aria-label="Next image"
                   >
                     ›
@@ -1022,56 +1079,49 @@ const ProductDetail = () => {
               )}
               {showZoomHint && (
                 <div className="zoom-hint">
-                  Double tap or pinch to zoom
-                </div>
-              )}
-              {mobilePinchScale > 1 && (
-                <div className="mobile-zoom-indicator">
-                  {Math.round(mobilePinchScale * 100)}%
-                </div>
-              )}
-              {showDesktopZoomHint && (
-                <div className="desktop-zoom-hint">
-                  🔍 Hover to zoom
+                  <span>👆</span>
+                  <span>Pinch to zoom more</span>
                 </div>
               )}
             </div>
             
-            {/* Flipkart Style Zoom Box - Desktop Only */}
-            {showZoomBox && product.images && product.images.length > 0 && (
-              <div className="zoom-box-container">
-                <div 
-                  className="zoom-box"
-                  style={{
-                    backgroundImage: `url(${getImageUrl(product.images[selectedImage])})`,
-                    backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                    backgroundSize: '250%'
-                  }}
-                />
+            {product.images && product.images.length > 1 && (
+              <div className="thumbnail-images">
+                {/* Show only first 5 thumbnails on mobile */}
+                {(window.innerWidth <= 968 ? product.images.slice(0, 5) : product.images).map((img, index) => (
+                  <img
+                    key={index}
+                    src={getImageUrl(img)}
+                    alt={`${product.name} ${index + 1}`}
+                    className={selectedImage === index ? 'active' : ''}
+                    onClick={() => {
+                      setSelectedImage(index);
+                      // Reset zoom when changing images
+                      setMobilePinchScale(1);
+                      setMobilePanPosition({ x: 0, y: 0 });
+                      setInitialPinchDistance(null);
+                      setInitialPinchScale(1);
+                    }}
+                    onDoubleClick={() => {
+                      openLightbox(index);
+                    }}
+                  />
+                ))}
+                {/* More button for mobile when there are many images */}
+                {product.images.length > 5 && window.innerWidth <= 968 && (
+                  <div 
+                    className="more-thumbnails-indicator"
+                    onClick={() => {
+                      // Open lightbox to show all images
+                      openLightbox(selectedImage || 0);
+                    }}
+                  >
+                    More →
+                  </div>
+                )}
               </div>
             )}
           </div>
-          
-          {product.images && product.images.length > 1 && (
-            <div className="thumbnail-images">
-              {product.images.map((img, index) => (
-                <img
-                  key={index}
-                  src={getImageUrl(img)}
-                  alt={`${product.name} ${index + 1}`}
-                  className={selectedImage === index ? 'active' : ''}
-                  onClick={() => {
-                    setSelectedImage(index);
-                    setMobilePinchScale(1);
-                    setMobilePanPosition({ x: 0, y: 0 });
-                  }}
-                  onDoubleClick={() => {
-                    openLightbox(index);
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="product-info-detail">
@@ -1485,13 +1535,15 @@ const ProductDetail = () => {
                   )}
                 </div>
                 <button onClick={openVariationModal} className="btn-add-cart">
-                  🛒 Add to Cart
+                  <span>🛒</span>
+                  <span>Add to Cart</span>
                 </button>
                 <button
                   onClick={openVariationModal}
                   className="btn-buy-now"
                 >
-                  ⚡ Order Now
+                  <span>⚡</span>
+                  <span>Order Now</span>
                 </button>
               </div>
               {rangePrices && rangePrices.length > 0 && (
@@ -2239,17 +2291,19 @@ const ProductDetail = () => {
             </div>
 
             <div className="variation-modal-footer">
-              <button onClick={handleModalAddToCart} className="btn-add-to-cart-modal">
-                🛒 Add to Cart
-              </button>
-              <button onClick={handleModalBuyNow} className="btn-buy-now-modal">
-                ⚡ Buy Now
-              </button>
-              <div className="modal-footer-secondary">
-                <button onClick={closeVariationModal} className="btn-chat-now">
-                  Chat now
+              <div className="main-buttons-row">
+                <button className="btn-add-cart" onClick={handleModalAddToCart}>
+                  <span>🛒</span>
+                  <span>Add to Cart</span>
+                </button>
+                <button className="btn-buy-now" onClick={handleModalBuyNow}>
+                  <span>⚡</span>
+                  <span>Order Now</span>
                 </button>
               </div>
+              <button onClick={closeVariationModal} className="btn-chat-now">
+                Chat now
+              </button>
             </div>
           </div>
         </div>
@@ -2327,7 +2381,14 @@ const ProductDetail = () => {
                 }}
                 onClick={(e) => {
                   if (lightboxZoomLevel === 1) {
+                    // Zoom in on click when at normal size
                     zoomIn();
+                  } else if (lightboxZoomLevel < 3) {
+                    // Continue zooming in
+                    zoomIn();
+                  } else {
+                    // Reset to normal size when at max zoom
+                    resetZoom();
                   }
                 }}
                 onMouseDown={(e) => {
@@ -2335,11 +2396,23 @@ const ProductDetail = () => {
                     e.preventDefault();
                     const startX = e.clientX - lightboxPanPosition.x;
                     const startY = e.clientY - lightboxPanPosition.y;
+                    const isDragging = true;
 
                     const handleMouseMove = (moveEvent) => {
+                      if (!isDragging) return;
+                      
+                      // Calculate new pan position with bounds checking
+                      const newX = moveEvent.clientX - startX;
+                      const newY = moveEvent.clientY - startY;
+                      
+                      // Apply reasonable bounds to prevent image from going too far off screen
+                      const maxPan = (lightboxZoomLevel - 1) * 200;
+                      const boundedX = Math.max(-maxPan, Math.min(maxPan, newX));
+                      const boundedY = Math.max(-maxPan, Math.min(maxPan, newY));
+                      
                       setLightboxPanPosition({
-                        x: moveEvent.clientX - startX,
-                        y: moveEvent.clientY - startY
+                        x: boundedX,
+                        y: boundedY
                       });
                     };
 
@@ -2362,7 +2435,7 @@ const ProductDetail = () => {
                       touch2.clientX - touch1.clientX,
                       touch2.clientY - touch1.clientY
                     );
-                    setTouchDistance(distance);
+                    setLightboxPinchDistance(distance);
                   } else if (e.touches.length === 1 && lightboxZoomLevel > 1) {
                     // Pan start when zoomed
                     setTouchStart(e.touches[0].clientX);
@@ -2391,7 +2464,7 @@ const ProductDetail = () => {
                   }
                 }}
                 onTouchMove={(e) => {
-                  if (e.touches.length === 2 && touchDistance) {
+                  if (e.touches.length === 2 && lightboxPinchDistance) {
                     // Pinch zoom
                     e.preventDefault();
                     const touch1 = e.touches[0];
@@ -2400,7 +2473,7 @@ const ProductDetail = () => {
                       touch2.clientX - touch1.clientX,
                       touch2.clientY - touch1.clientY
                     );
-                    const scale = Math.min(Math.max((distance / touchDistance) * lightboxZoomLevel, 1), 3);
+                    const scale = Math.min(Math.max((distance / lightboxPinchDistance) * lightboxZoomLevel, 1), 3);
                     setLightboxZoomLevel(scale);
                   } else if (e.touches.length === 1 && lightboxZoomLevel > 1 && touchStart !== null && touchEnd !== null) {
                     // Pan when zoomed
@@ -2449,7 +2522,7 @@ const ProductDetail = () => {
                   }
                   
                   // Reset touch states
-                  setTouchDistance(null);
+                  setLightboxPinchDistance(null);
                   setTouchStart(null);
                   setTouchEnd(null);
                   setLightboxTouchStart({ x: 0, y: 0, time: 0 });
