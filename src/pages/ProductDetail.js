@@ -1009,11 +1009,10 @@ const ProductDetail = () => {
                   src={getImageUrl(product.images[selectedImage])} 
                   alt={product.name}
                   style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    width: 'auto',
-                    height: 'auto',
-                    objectFit: 'contain',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center',
                     transform: mobilePinchScale > 1 
                       ? `scale(${mobilePinchScale}) translate(${mobilePanPosition.x / mobilePinchScale}px, ${mobilePanPosition.y / mobilePinchScale}px)`
                       : 'none',
