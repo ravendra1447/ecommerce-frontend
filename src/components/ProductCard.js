@@ -11,6 +11,7 @@ const ProductCard = ({ product, showWishlist = true }) => {
   const navigate = useNavigate();
   const [inWishlist, setInWishlist] = useState(false);
   const [checkingWishlist, setCheckingWishlist] = useState(false);
+  const thumbnailContainerRef = React.useRef(null);
 
   const checkWishlistStatus = async () => {
     try {
@@ -39,6 +40,45 @@ const ProductCard = ({ product, showWishlist = true }) => {
       });
     }
   }, [product]);
+
+  const handleThumbnailScroll = (direction) => {
+    if (!thumbnailContainerRef.current) {
+      console.log('❌ No container ref found');
+      return;
+    }
+    
+    const container = thumbnailContainerRef.current;
+    console.log('🔍 Container:', container);
+    console.log('🔍 Scroll width:', container.scrollWidth, 'Client width:', container.clientWidth);
+    
+    // Calculate scroll amount based on thumbnail width
+    const thumbnailWidth = 66; // 50px image + 8px gap + padding
+    const scrollAmount = thumbnailWidth * 2; // Scroll by 2 thumbnails
+    
+    if (direction === 'left') {
+      console.log('⬅️ Scrolling left by:', scrollAmount);
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+      console.log('➡️ Scrolling right by:', scrollAmount);
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleThumbnailClick = (index) => {
+    console.log('🖱️ Thumbnail clicked:', index);
+    // For ProductCard, just log the selection and scroll into view
+    if (thumbnailContainerRef.current) {
+      const thumbnailElements = thumbnailContainerRef.current.querySelectorAll('.thumbnail-wrapper');
+      console.log('🔍 Found thumbnail elements:', thumbnailElements.length);
+      if (thumbnailElements[index]) {
+        console.log('✅ Scrolling to thumbnail:', index);
+        thumbnailElements[index].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    } else {
+      console.log('❌ No container ref for click');
+    }
+    console.log('Selected thumbnail:', index);
+  };
 
   const handleWishlistToggle = async (e) => {
     e.preventDefault();
@@ -170,7 +210,11 @@ const ProductCard = ({ product, showWishlist = true }) => {
         
         <div className="product-info">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <h3 className="product-card-title" style={{ flex: 1, margin: 0 }}>{product.name}</h3>
+            <div style={{ flex: 1 }}>
+              <h3 className="product-card-title" style={{ margin: '0 0 8px 0' }}>{product.name}</h3>
+              
+              {/* Thumbnail section removed for recently visited products */}
+            </div>
             <button
               onClick={(e) => {
                 e.preventDefault();

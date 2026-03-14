@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
@@ -15,6 +15,10 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  
+  // NOTE: Images should ONLY change on manual interaction (click, swipe, tap)
+  // NO automatic carousel/slide functionality should be implemented
+  // This ensures users have full control over image navigation
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [isZooming, setIsZooming] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
@@ -24,6 +28,7 @@ const ProductDetail = () => {
   const [lastTap, setLastTap] = useState(0);
   const [mobilePinchScale, setMobilePinchScale] = useState(1);
   const [mobilePanPosition, setMobilePanPosition] = useState({ x: 0, y: 0 });
+  const thumbnailContainerRef = useRef(null);
   const [initialPinchDistance, setInitialPinchDistance] = useState(null);
   const [initialPinchScale, setInitialPinchScale] = useState(1);
   const [showZoomHint, setShowZoomHint] = useState(false);
@@ -196,6 +201,51 @@ const ProductDetail = () => {
   const resetZoom = () => {
     setLightboxZoomLevel(1);
     setLightboxPanPosition({ x: 0, y: 0 });
+  };
+
+  const handleThumbnailScroll = (direction) => {
+    if (!thumbnailContainerRef.current) {
+      console.log('❌ No container ref found');
+      return;
+    }
+    
+    const container = thumbnailContainerRef.current;
+    console.log('🔍 Container:', container);
+    console.log('🔍 Scroll width:', container.scrollWidth, 'Client width:', container.clientWidth);
+    
+    // Calculate scroll amount based on thumbnail width
+    const thumbnailWidth = 66; // 50px image + 8px gap + padding
+    const scrollAmount = thumbnailWidth * 2; // Scroll by 2 thumbnails
+    
+    if (direction === 'left') {
+      console.log('⬅️ Scrolling left by:', scrollAmount);
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else {
+      console.log('➡️ Scrolling right by:', scrollAmount);
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleThumbnailClick = (index) => {
+    console.log('🖱️ Thumbnail clicked:', index);
+    setSelectedImage(index);
+    // Reset zoom when changing images
+    setMobilePinchScale(1);
+    setMobilePanPosition({ x: 0, y: 0 });
+    setInitialPinchDistance(null);
+    setInitialPinchScale(1);
+    
+    // Scroll the thumbnail into view
+    if (thumbnailContainerRef.current) {
+      const thumbnailElements = thumbnailContainerRef.current.querySelectorAll('.thumbnail-wrapper');
+      console.log('🔍 Found thumbnail elements:', thumbnailElements.length);
+      if (thumbnailElements[index]) {
+        console.log('✅ Scrolling to thumbnail:', index);
+        thumbnailElements[index].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    } else {
+      console.log('❌ No container ref for click');
+    }
   };
 
   // Auto-open variation modal ONLY if query parameter is present
@@ -403,9 +453,18 @@ const ProductDetail = () => {
   const getCurrentStock = () => {
     if (!product) return 0;
     
+    console.log('🔍 getCurrentStock called:', {
+      selectedSize,
+      selectedColor,
+      stockMaintenanceType: product.stock_maintane_type,
+      baseStock: product.stock,
+      colorsStock: product.colors?.map(c => ({ name: c.colorName, stock: c.stock }))
+    });
+    
     // If stock maintenance type is Unlimited, return Infinity to indicate unlimited stock
     if (product.stock_maintane_type === 'Unlimited') {
-      return Infinity;
+      console.log('✅ Unlimited stock type detected - IGNORING individual color stock');
+      return Infinity; // Always return unlimited for unlimited stock type
     }
     
     // Priority: Variant stock > Size stock > Color stock > Base stock
@@ -422,12 +481,23 @@ const ProductDetail = () => {
       if (sizeObj) return sizeObj.stock;
     }
     
-    // Fallback to color stock
+    // Fallback to color stock (only if NOT unlimited)
     if (selectedColor && product.colors) {
       const colorObj = product.colors.find(c => c.colorName === selectedColor);
-      if (colorObj) return colorObj.stock;
+      if (colorObj) {
+        console.log('🎨 Using color stock:', colorObj.stock);
+        return colorObj.stock;
+      }
     }
     
+    // If no color selected but colors exist, sum all color stocks
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      const totalStock = product.colors.reduce((sum, color) => sum + (color.stock || 0), 0);
+      console.log('📊 Total color stock (no selection):', totalStock);
+      return totalStock;
+    }
+    
+    console.log('📦 Using base stock:', product.stock || 0);
     return product.stock || 0;
   };
 
@@ -1085,39 +1155,114 @@ const ProductDetail = () => {
             </div>
             
             {product.images && product.images.length > 1 && (
-              <div className="thumbnail-images">
-                {/* Show only first 5 thumbnails on mobile */}
-                {(window.innerWidth <= 968 ? product.images.slice(0, 5) : product.images).map((img, index) => (
-                  <img
-                    key={index}
-                    src={getImageUrl(img)}
-                    alt={`${product.name} ${index + 1}`}
-                    className={selectedImage === index ? 'active' : ''}
-                    onClick={() => {
-                      setSelectedImage(index);
-                      // Reset zoom when changing images
-                      setMobilePinchScale(1);
-                      setMobilePanPosition({ x: 0, y: 0 });
-                      setInitialPinchDistance(null);
-                      setInitialPinchScale(1);
-                    }}
-                    onDoubleClick={() => {
-                      openLightbox(index);
-                    }}
-                  />
-                ))}
-                {/* More button for mobile when there are many images */}
-                {product.images.length > 5 && window.innerWidth <= 968 && (
-                  <div 
-                    className="more-thumbnails-indicator"
-                    onClick={() => {
-                      // Open lightbox to show all images
-                      openLightbox(selectedImage || 0);
-                    }}
-                  >
-                    More →
-                  </div>
+              <div className="thumbnail-images-container" style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '350px',
+                overflow: 'hidden'
+              }}>
+                {/* Thumbnail Navigation Buttons */}
+                {product.images.length > 3 && (
+                  <>
+                    <button
+                      className="thumbnail-nav-btn thumbnail-prev-btn"
+                      onClick={() => handleThumbnailScroll('left')}
+                      aria-label="Previous thumbnails"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      className="thumbnail-nav-btn thumbnail-next-btn"
+                      onClick={() => handleThumbnailScroll('right')}
+                      aria-label="Next thumbnails"
+                    >
+                      ›
+                    </button>
+                  </>
                 )}
+                <div className="thumbnail-images" ref={thumbnailContainerRef} style={{
+                  display: 'flex',
+                  gap: '8px',
+                  overflowX: 'scroll',
+                  overflowY: 'hidden',
+                  padding: '4px 0',
+                  scrollBehavior: 'smooth',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#ff6b00 #f1f1f1',
+                  scrollSnapType: 'x mandatory',
+                  width: '100%',
+                  flexWrap: 'nowrap',
+                  height: '80px'
+                }}>
+                  {product.images.map((img, index) => {
+                    // Get color name from variants or fallback to image color
+                    const getColorName = () => {
+                      // Check if product has variants with color information
+                      if (product.variants && product.variants[index]) {
+                        const variant = product.variants[index];
+                        return variant.color || variant.colorName || img.color || `Color ${index + 1}`;
+                      }
+                      // Check if image has color property
+                      if (img.color) {
+                        return img.color;
+                      }
+                      // Fallback to Color 1, Color 2, etc.
+                      return `Color ${index + 1}`;
+                    };
+                    
+                    return (
+                    <div key={index} className="thumbnail-wrapper" style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      flexShrink: 0,
+                      minWidth: '66px'
+                    }}>
+                      <img
+                        src={getImageUrl(img)}
+                        alt={`${product.name} ${index + 1}`}
+                        className={selectedImage === index ? 'active' : ''}
+                        onClick={() => handleThumbnailClick(index)}
+                        onDoubleClick={() => {
+                          openLightbox(index);
+                        }}
+                        style={{
+                          width: '50px',
+                          height: '50px',
+                          borderRadius: '8px',
+                          objectFit: 'cover',
+                          objectPosition: 'center',
+                          border: selectedImage === index ? '2px solid #ff6b00' : '1px solid #e0e0e0',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          backgroundColor: '#f8f8f8',
+                          padding: '0px'
+                        }}
+                      />
+                      {/* Color name below thumbnail */}
+                      <div className="thumbnail-color-name" style={{
+                        fontSize: '0.65rem',
+                        color: '#333',
+                        textAlign: 'center',
+                        lineHeight: '1.2',
+                        maxWidth: '60px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        fontWeight: '600',
+                        marginTop: '2px',
+                        background: '#f8f8f8',
+                        padding: '2px 4px',
+                        borderRadius: '3px',
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        {getColorName()}
+                      </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -1134,6 +1279,107 @@ const ProductDetail = () => {
           )}
 
           <h1 className="product-name">{product.name}</h1>
+          
+          {/* Product Color Display */}
+          {(() => {
+            // Get current color based on selected image
+            const getCurrentColorInfo = () => {
+              if (product.images && product.images[selectedImage]) {
+                const currentImage = product.images[selectedImage];
+                
+                // Check if product has variants with color information
+                if (product.variants && product.variants.length > 0) {
+                  // Try to find variant by matching image index
+                  let matchingVariant = product.variants[selectedImage];
+                  
+                  // If direct index match doesn't work, try to find by image URL
+                  if (!matchingVariant && currentImage) {
+                    matchingVariant = product.variants.find(variant => 
+                      variant.imageUrl === currentImage || 
+                      variant.image === currentImage ||
+                      (Array.isArray(product.images) && product.images[selectedImage] === variant.image)
+                    );
+                  }
+                  
+                  if (matchingVariant) {
+                    return {
+                      name: matchingVariant.colorName || matchingVariant.color,
+                      colorCode: matchingVariant.colorCode || null,
+                      imageUrl: matchingVariant.imageUrl || matchingVariant.image || null
+                    };
+                  }
+                }
+                
+                // Check if product has colors array with proper color names
+                if (product.colors && product.colors.length > 0) {
+                  // Try to find color by index or by matching image
+                  let colorObj = product.colors[selectedImage];
+                  
+                  // If direct index match doesn't work, try to find by image URL
+                  if (!colorObj && currentImage) {
+                    colorObj = product.colors.find(color => 
+                      color.imageUrl === currentImage || 
+                      color.image === currentImage ||
+                      (Array.isArray(product.images) && product.images[selectedImage] === color.image)
+                    );
+                  }
+                  
+                  if (colorObj) {
+                    return {
+                      name: colorObj.colorName || colorObj.color,
+                      colorCode: colorObj.colorCode || null,
+                      imageUrl: colorObj.imageUrl || colorObj.image || null
+                    };
+                  }
+                }
+                
+                // Check if image has color property
+                if (currentImage.color) {
+                  return {
+                    name: currentImage.color,
+                    colorCode: currentImage.colorCode || null,
+                    imageUrl: currentImage.imageUrl || null
+                  };
+                }
+                
+                // Fallback to Color 1, Color 2, etc.
+                return {
+                  name: `Color ${selectedImage + 1}`,
+                  colorCode: null,
+                  imageUrl: null
+                };
+              }
+              return null;
+            };
+            
+            const colorInfo = getCurrentColorInfo();
+            
+            if (!colorInfo) return null;
+            
+            return (
+              <div className="product-current-color">
+                <div className="color-display-item">
+                  {colorInfo.imageUrl ? (
+                    <img
+                      src={getImageUrl(colorInfo.imageUrl)}
+                      alt={colorInfo.name}
+                      className="color-thumbnail"
+                    />
+                  ) : colorInfo.colorCode ? (
+                    <div
+                      className="color-swatch"
+                      style={{ backgroundColor: colorInfo.colorCode }}
+                    />
+                  ) : (
+                    <div className="color-placeholder">
+                      <span>🎨</span>
+                    </div>
+                  )}
+                  <span className="color-name">{colorInfo.name}</span>
+                </div>
+              </div>
+            );
+          })()}
           
           <div className="product-rating-section">
             {product.rating && Number(product.rating) > 0 && (
@@ -1365,35 +1611,33 @@ const ProductDetail = () => {
                 })()}
               </div>
             </div>
-          ) : (
+          ) : product.sizes && product.sizes.length > 0 ? (
             <>
               {/* Size Selection (Fallback) */}
-              {product.sizes && product.sizes.length > 0 && (
-                <div className="size-selection">
-                  <label>
-                    Select Size: <span className="required">*</span>
-                  </label>
-                  <div className="size-buttons-container">
-                    {product.sizes.map((sizeItem, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          setSelectedSize(sizeItem.size);
-                          setQuantity(1);
-                        }}
-                        disabled={sizeItem.stock <= 0}
-                        className={`size-button ${selectedSize === sizeItem.size ? 'selected' : ''}`}
-                      >
-                        {sizeItem.size}
-                        {sizeItem.stock <= 0 && (
-                          <span className="size-out-of-stock-badge">×</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+              <div className="size-selection">
+                <label>
+                  Select Size: <span className="required">*</span>
+                </label>
+                <div className="size-buttons-container">
+                  {product.sizes.map((sizeItem, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize(sizeItem.size);
+                        setQuantity(1);
+                      }}
+                      disabled={sizeItem.stock <= 0}
+                      className={`size-button ${selectedSize === sizeItem.size ? 'selected' : ''}`}
+                    >
+                      {sizeItem.size}
+                      {sizeItem.stock <= 0 && (
+                        <span className="size-out-of-stock-badge">×</span>
+                      )}
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
               {/* Color Selection (Fallback) */}
               {product.colors && product.colors.length > 0 && (
@@ -1415,32 +1659,79 @@ const ProductDetail = () => {
                         style={{
                           position: 'relative',
                           display: 'flex',
-                          flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '5px'
+                          justifyContent: 'center',
+                          minWidth: '100px'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {colorItem.colorCode && (
-                            <span
-                              style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '50%',
-                                backgroundColor: colorItem.colorCode,
-                                border: '2px solid #ddd',
-                                display: 'inline-block'
-                              }}
-                              title={colorItem.colorName}
-                            />
-                          )}
-                          <span>{colorItem.colorName}</span>
-                        </div>
-                        {colorItem.stock <= 0 && (
+                        {colorItem.colorName}
+                        {product.stock_maintane_type !== 'Unlimited' && colorItem.stock <= 0 && (
                           <span className="size-out-of-stock-badge">×</span>
                         )}
                       </button>
                     ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Only Colors - No Sizes - Add Default Size */}
+              {product.colors && product.colors.length > 0 ? (
+                <div className="size-selection">
+                  <label>
+                    Select Color: <span className="required">*</span>
+                  </label>
+                  <div className="size-buttons-container">
+                    {product.colors.map((colorItem, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => {
+                          setSelectedColor(colorItem.colorName);
+                          setSelectedSize('One Size'); // Auto-select default size
+                          setQuantity(1);
+                        }}
+                        disabled={product.stock_maintane_type === 'Unlimited' ? false : colorItem.stock <= 0}
+                        className={`size-button ${selectedColor === colorItem.colorName ? 'selected' : ''}`}
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '100px'
+                        }}
+                      >
+                        {colorItem.colorName}
+                        {product.stock_maintane_type !== 'Unlimited' && colorItem.stock <= 0 && (
+                          <span className="size-out-of-stock-badge">×</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#666' }}>
+                    Size: One Size (Free Size)
+                  </div>
+                </div>
+              ) : (
+                /* No variants, sizes, or colors - show default */
+                <div className="size-selection">
+                  <label>Size:</label>
+                  <div className="size-buttons-container">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSize('One Size');
+                        setQuantity(1);
+                      }}
+                      disabled={getCurrentStock() <= 0}
+                      className={`size-button ${selectedSize === 'One Size' ? 'selected' : ''}`}
+                    >
+                      One Size
+                      {getCurrentStock() <= 0 && (
+                        <span className="size-out-of-stock-badge">×</span>
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
@@ -1471,6 +1762,16 @@ const ProductDetail = () => {
                   ? `In Stock (${getCurrentStock()} available)` 
                   : 'Out of Stock'}
             </span>
+            {product.stock_maintane_type === 'Unlimited' && (
+              <span style={{ 
+                marginLeft: '10px', 
+                fontSize: '0.8rem', 
+                color: '#28a745',
+                fontWeight: '600'
+              }}>
+                ✓ Unlimited Stock
+              </span>
+            )}
           </div>
 
           {(getCurrentStock() > 0 || getCurrentStock() === Infinity) && (
