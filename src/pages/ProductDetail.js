@@ -1230,16 +1230,28 @@ const ProductDetail = () => {
                     objectFit: 'cover',
                     objectPosition: 'center',
                     transform: mobilePinchScale > 1 
+                      ? `scale(${mobilePinchScale}) translate(${mobilePanPosition.x / mobilePinchScale}px, ${mobilePanPosition.y / mobilePinchScale}px)`
+                      : 'none',
+                    transition: 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    cursor: mobilePinchScale > 1 ? 'grab' : 'pointer',
+                    transformOrigin: 'center center',
+                    display: 'block !important',
+                    opacity: '1 !important',
+                    visibility: 'visible !important'
+                  }}
+                  draggable={false}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openLightbox(selectedImage);
                   }}
                   onError={(e) => {
-                    console.error('❌ Main image failed to load:', getImageUrl(product.images[selectedImage]));
-                    console.error('❌ Image path:', product.images[selectedImage]);
+                    console.error('Image failed to load:', getImageUrl(product.images[selectedImage]));
                     const img = e.currentTarget;
                     img.onerror = null;
-                    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
+                    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                   }}
                   onLoad={() => {
-                    console.log('✅ Main image loaded successfully:', getImageUrl(product.images[selectedImage]));
+                    console.log('Image loaded successfully:', getImageUrl(product.images[selectedImage]));
                   }}
                 />
               ) : (
@@ -1719,7 +1731,7 @@ const ProductDetail = () => {
                     const sizeVariants = product.variants.filter(v => v.size === size);
                     // Calculate total stock for this size
                     const totalStock = sizeVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
-                    // Check if product has unlimited stock
+                    // Check if product has unlimited stock type
                     const isUnlimited = product.stock_maintane_type === 'Unlimited';
                     // Get the minimum price for this size
                     const minPrice = Math.min(...sizeVariants.map(v => v.price || 0));
@@ -1755,9 +1767,7 @@ const ProductDetail = () => {
                   Select Size: <span className="required">*</span>
                 </label>
                 <div className="size-buttons-container">
-                  {product.sizes.map((sizeItem, index) => {
-                    const isUnlimited = product.stock_maintane_type === 'Unlimited';
-                    return (
+                  {product.sizes.map((sizeItem, index) => (
                     <button
                       key={index}
                       type="button"
@@ -1765,16 +1775,15 @@ const ProductDetail = () => {
                         setSelectedSize(sizeItem.size);
                         setQuantity(1);
                       }}
-                      disabled={!isUnlimited && sizeItem.stock <= 0}
+                      disabled={product.stock_maintane_type === 'Unlimited' ? false : sizeItem.stock <= 0}
                       className={`size-button ${selectedSize === sizeItem.size ? 'selected' : ''}`}
                     >
                       {sizeItem.size}
-                      {!isUnlimited && sizeItem.stock <= 0 && (
+                      {product.stock_maintane_type !== 'Unlimited' && sizeItem.stock <= 0 && (
                         <span className="size-out-of-stock-badge">×</span>
                       )}
                     </button>
-                    );
-                  })}
+                  ))}
                 </div>
               </div>
 
@@ -1893,25 +1902,15 @@ const ProductDetail = () => {
             </div>
           )}
 
+          {product.stock_maintane_type !== 'Unlimited' && (
           <div className="product-stock">
-            <span className={getCurrentStock() > 0 || getCurrentStock() === Infinity ? 'in-stock' : 'out-of-stock'}>
-              {getCurrentStock() === Infinity 
-                ? 'In Stock (Unlimited)' 
-                : getCurrentStock() > 0 
-                  ? `In Stock (${getCurrentStock()} available)` 
-                  : 'Out of Stock'}
+            <span className={getCurrentStock() > 0 ? 'in-stock' : 'out-of-stock'}>
+              {getCurrentStock() > 0 
+                ? `In Stock (${getCurrentStock()} available)` 
+                : 'Out of Stock'}
             </span>
-            {product.stock_maintane_type === 'Unlimited' && (
-              <span style={{ 
-                marginLeft: '10px', 
-                fontSize: '0.8rem', 
-                color: '#28a745',
-                fontWeight: '600'
-              }}>
-                ✓ Unlimited Stock
-              </span>
-            )}
           </div>
+        )}
 
           {(getCurrentStock() > 0 || getCurrentStock() === Infinity) && (
             <div className="product-actions">

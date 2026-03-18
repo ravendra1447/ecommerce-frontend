@@ -137,18 +137,25 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
 
   // Get image URL with proper fallback
   const getImageUrl = () => {
-    // Always use the first available image for related products
-    if (product.images && product.images.length > 0) {
+    // Check for color-specific image first
+    if (product.selectedColor && product.images && product.images.length > 0) {
       const img = product.images[0];
-      // Skip external placeholder URLs but still return the image
+      if (img && !img.includes('via.placeholder.com') && !img.includes('placeholder.com')) {
+        return getImageUrlHelper(img);
+      }
+    }
+    
+    // Regular image handling
+    if (product.images && product.images.length > 0 && product.images[0]) {
+      const img = product.images[0];
+      // Skip external placeholder URLs
       if (img.includes('via.placeholder.com') || img.includes('placeholder.com')) {
-        return placeholderImage; // Use our placeholder instead
+        return null;
       }
       // Return full URL if it's already a full URL, otherwise prepend server URL
       return getImageUrlHelper(img);
     }
-    // Always return placeholder if no images
-    return placeholderImage;
+    return null;
   };
 
   // Base64 encoded placeholder image (better quality)
@@ -317,6 +324,13 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
                       {product.images.map((img, index) => {
                         console.log(`🖼️ Rendering thumbnail ${index}:`, img);
                         
+                        const getColorName = () => {
+                          if (product.selectedColor) {
+                            return `${product.selectedColor}`;
+                          }
+                          return `Color ${index + 1}`;
+                        };
+                        
                         return (
                           <div key={index} className="thumbnail-wrapper" style={{
                             display: 'flex',
@@ -349,6 +363,17 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
                                 e.target.style.transform = 'scale(1)';
                               }}
                             />
+                            <span style={{
+                              fontSize: '10px',
+                              color: '#666',
+                              textAlign: 'center',
+                              maxWidth: '60px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {getColorName()}
+                            </span>
                           </div>
                         );
                       })}
