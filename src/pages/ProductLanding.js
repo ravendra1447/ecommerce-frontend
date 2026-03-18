@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
 import ProductCardSlider from '../components/ProductCardSlider';
+import MultiColorProductCard from '../components/MultiColorProductCard';
 import './ProductLanding.css';
 
 const ProductLanding = () => {
@@ -179,7 +180,7 @@ const ProductLanding = () => {
 
             <div className="products-grid">
               {categoryProducts.map((product) => (
-                <ProductCardSlider key={product.id} product={product} />
+                <MultiColorProductCard key={product.id} product={product} showWishlist={true} />
               ))}
             </div>
             

@@ -51,17 +51,20 @@
 .product-image-slider {
   position: relative;
   width: 100%;
-  height: auto !important;
+  height: 420px !important;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
   overflow: hidden !important;
   flex-shrink: 0;
-  display: block !important;
-  padding: 6px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
   margin: 0 0 12px 0;
   border: 1px solid #e8e8e8;
   border-radius: 10px;
   box-shadow: 0 3px 15px rgba(0, 0, 0, 0.12);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box !important;
 }
 
 /* Desktop - Much smaller entire card */
@@ -183,10 +186,8 @@
 
 .product-slider-image {
   width: 100%;
-  height: auto !important;
-  max-height: none !important;
-  min-height: auto !important;
-  object-fit: contain !important;
+  height: 100% !important;
+  object-fit: cover !important;
   object-position: center !important;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   background: #ffffff !important;

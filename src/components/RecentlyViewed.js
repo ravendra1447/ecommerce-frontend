@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
-import ProductCard from './ProductCard';
+import MultiColorProductCard from './MultiColorProductCard';
 import './RecentlyViewed.css';
 
 const RecentlyViewedSection = () => {
@@ -53,8 +53,8 @@ const RecentlyViewedSection = () => {
           </div>
           <div className="products-scroll-alibaba">
             {recentProducts.map(product => (
-              <div key={product._id} className="product-scroll-item">
-                <ProductCard product={product} showWishlist={true} />
+              <div key={product._id} className="product-scroll-item recently-viewed-product">
+                <MultiColorProductCard product={product} showWishlist={true} showThumbnails={false} />
               </div>
             ))}
           </div>

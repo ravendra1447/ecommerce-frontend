@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSlider from '../components/ProductCardSlider';
+import MultiColorProductCard from '../components/MultiColorProductCard';
 import RecentlyViewedSection from '../components/RecentlyViewed';
 import Footer from '../components/Footer';
 import { getImageUrl } from '../utils/config';
@@ -187,7 +188,7 @@ const Home = () => {
                               alt={product.name}
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
                               }}
                             />
                           ) : (
@@ -238,7 +239,7 @@ const Home = () => {
                               alt={product.name}
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
                               }}
                             />
                           ) : (
@@ -289,7 +290,7 @@ const Home = () => {
                               alt={product.name}
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
                               }}
                             />
                           ) : (

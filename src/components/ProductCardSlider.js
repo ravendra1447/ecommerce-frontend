@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getImageUrl } from '../utils/config';
+import ProductCard from './ProductCard';
 import './ProductCardSlider.css';
+import './MultiColorProductCard.css';
 
 const ProductCardSlider = ({ product, compact = false, isHero = false, hideCategory = false, hideSeller = false }) => {
   const navigate = useNavigate();
@@ -9,8 +11,11 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
   const [thumbnailScrollPosition, setThumbnailScrollPosition] = useState(0);
   const thumbnailContainerRef = React.useRef(null);
 
+  // All hooks must be called before any early returns
+  const hasVideo = product?.video_url || false;
+  const views = product?.viewCount || product?.view_count || product?.views || 0;
+  
   // Get MOQ from different possible field names (calculate before hooks)
-  // Check for sale_min_qty in different possible formats
   let moq = 1; // Default to 1 if not found
   if (product) {
     const moqRaw = product.sale_min_qty !== undefined && product.sale_min_qty !== null ? product.sale_min_qty : 
@@ -27,31 +32,182 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     }
   }
 
-  // Handle images - could be array, string, or null/undefined (calculate before hooks)
+  // Get images with proper fallback
   const images = useMemo(() => {
-    let resultImages = [];
-    if (product && product.images) {
-      if (Array.isArray(product.images)) {
-        resultImages = product.images.filter(img => img && (typeof img === 'string' ? img.trim() !== '' : true));
-      } else if (typeof product.images === 'string') {
-        // Try to parse if it's a JSON string
-        try {
-          const parsed = JSON.parse(product.images);
-          resultImages = Array.isArray(parsed) ? parsed.filter(img => img && (typeof img === 'string' ? img.trim() !== '' : true)) : [product.images];
-        } catch {
-          // If not JSON, treat as single image
-          resultImages = product.images.trim() !== '' ? [product.images] : [];
-        }
+    if (!product) return [];
+    
+    // Priority: variant images > product images > empty array
+    let productImages = [];
+    
+    // Check for variant images first
+    if (product.variants && product.variants.length > 0) {
+      const variantImages = product.variants
+        .filter(v => v.image || v.imageUrl)
+        .map(v => v.image || v.imageUrl);
+      
+      if (variantImages.length > 0) {
+        productImages = [...new Set(variantImages)]; // Remove duplicates
       }
     }
-    // Fallback to product.image if images array is empty
-    if (resultImages.length === 0 && product && product.image) {
-      resultImages = [product.image];
+    
+    // Fallback to product images if no variant images
+    if (productImages.length === 0 && product.images && product.images.length > 0) {
+      productImages = product.images;
     }
-    return resultImages;
+    
+    console.log('🖼️ ProductCardSlider - Final images:', productImages);
+    return productImages;
   }, [product]);
 
-  // DISABLED: Auto-scroll images - Now only manual interaction allowed
+  // Debug: Log when images change
+  useEffect(() => {
+    console.log('🖼️ Images updated:', {
+      count: images?.length || 0,
+      images: images?.slice(0, 3)
+    });
+  }, [images]);
+
+  // Auto-rotate images every 3 seconds (disabled for manual control)
+  /*
+  useEffect(() => {
+    if (images.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [images]);
+  */
+
+  // Early returns after all hooks are called
+  if (!product) return null;
+
+  // Check for color variants and show multiple cards if they exist
+  const getColorVariants = () => {
+    console.log('🔍 ProductCardSlider - Checking for color variants in product:', product.name);
+    console.log('🔍 Product data:', {
+      hasVariants: !!product.variants,
+      variantsCount: product.variants?.length || 0,
+      hasColors: !!product.colors,
+      colorsCount: product.colors?.length || 0,
+      imagesCount: images?.length || 0,
+      variants: product.variants,
+      colors: product.colors
+    });
+    
+    // FIRST PRIORITY: Use variants data to get exact color information
+    if (product.variants && product.variants.length > 0) {
+      console.log('📋 Using product.variants array');
+      const result = product.variants.map((variant, index) => ({
+        colorName: variant.colorName || variant.color || `Color ${index + 1}`,
+        colorCode: variant.colorCode || null,
+        imageUrl: variant.imageUrl || variant.image || (images && images[index]) || null
+      }));
+      console.log('🎨 Color variants from variants array:', result);
+      return result;
+    }
+    
+    // SECOND PRIORITY: Use product.colors array
+    if (product.colors && product.colors.length > 0) {
+      console.log('� Using product.colors array');
+      const result = product.colors.map((color, index) => ({
+        colorName: color.colorName || color.color || `Color ${index + 1}`,
+        colorCode: color.colorCode || null,
+        imageUrl: color.imageUrl || color.image || (images && images[index]) || null
+      }));
+      console.log('🎨 Color variants from colors array:', result);
+      return result;
+    }
+    
+    // THIRD PRIORITY: Parse variations string/array
+    if (product.variations) {
+      console.log('� Using variations data');
+      let parsedVariations = [];
+      
+      // Parse variations if it's a string
+      if (typeof product.variations === 'string') {
+        try {
+          parsedVariations = JSON.parse(product.variations);
+          console.log('✅ Parsed variations:', parsedVariations);
+        } catch (e) {
+          console.log('❌ Failed to parse variations:', e);
+        }
+      } else if (Array.isArray(product.variations)) {
+        parsedVariations = product.variations;
+      }
+      
+      // Use parsed variations - ONLY return actual variations, not all images
+      if (parsedVariations.length > 0) {
+        const result = parsedVariations.map((v, index) => ({
+          colorName: v.color || v.name || v.colorName || v.value || `Color ${index + 1}`,
+          colorCode: v.colorCode || v.color || null,
+          imageUrl: v.imageUrl || v.image || (images && images[index]) || null
+        }));
+        console.log('🎨 Color variants from variations:', result);
+        return result;
+      }
+    }
+    
+    console.log('🎨 No color variants found');
+    return [];
+  };
+
+  const colorVariants = getColorVariants();
+  console.log('🎨 ProductCardSlider - Color variants:', colorVariants.length);
+
+  // If we have color variants, Create cards based on actual colors from variations, not total images
+  if (colorVariants.length > 0) {
+    console.log('🎨 Creating cards for color variants:', colorVariants.length);
+    
+    return (
+      <div className="color-variants-container" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '1.5rem',
+        width: '100%'
+      }}>
+        {colorVariants.map((colorVariant, index) => {
+          console.log(`🎨 Creating card ${index} for color:`, colorVariant);
+          
+          // Create variant product with only this color's image
+          const variantProduct = { ...product };
+          variantProduct.images = [colorVariant.imageUrl]; // Only this variant's image
+          variantProduct.selectedColor = colorVariant.colorName;
+          variantProduct.colorCode = colorVariant.colorCode;
+          
+          return (
+            <div key={`${product.id || product._id}-color-${index}`} className="color-variant-card">
+              <ProductCard 
+                product={{
+                  ...variantProduct,
+                  name: product.name, // Keep original product name
+                  images: [colorVariant.imageUrl] // Only show this variant's image
+                }} 
+                showWishlist={true}
+              />
+              {colorVariant.colorName && (
+                <div className="color-indicator">
+                  {colorVariant.colorCode ? (
+                    <span 
+                      className="color-dot" 
+                      style={{ backgroundColor: colorVariant.colorCode }}
+                      title={colorVariant.colorName}
+                    />
+                  ) : (
+                    <span className="color-label" title={colorVariant.colorName}>
+                      {colorVariant.colorName}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   // Images should ONLY change when user manually clicks navigation buttons or dots
   // NO automatic carousel functionality
   /*
@@ -67,15 +223,6 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     }
   }, [images]);
   */
-
-  // Debug: Log when images change
-  useEffect(() => {
-    console.log('🖼️ Images updated:', {
-      count: images?.length || 0,
-      images: images?.slice(0, 3)
-    });
-  }, [images]);
-
 
   const handleThumbnailScroll = (direction) => {
     if (!thumbnailContainerRef.current) {
@@ -140,9 +287,10 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
   };
 
   const getImageUrlLocal = (imagePath) => {
-    if (!imagePath) return '/placeholder.png';
+    if (!imagePath) return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
     if (imagePath.startsWith('http')) return imagePath;
-    return getImageUrl(imagePath);
+    const url = getImageUrl(imagePath);
+    return url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
   };
 
 
@@ -158,20 +306,17 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    // Navigate to product detail page with query parameter to open variation modal
-    navigate(`/product-detail/${product.id}?autoOpen=true`);
+    // Navigate to product detail page
+    navigate(`/product-detail/${product.id}`);
   };
 
   const handleStartOrder = (e) => {
     e.stopPropagation();
-    // Navigate to product detail page with query parameter to open variation modal
-    navigate(`/product-detail/${product.id}?autoOpen=true`);
+    // Navigate to product detail page
+    navigate(`/product-detail/${product.id}`);
   };
 
   if (!product) return null;
-
-  const hasVideo = product.video_url || false;
-  const views = product.viewCount || product.view_count || product.views || 0;
 
   // Compact mode for similar items
   if (compact) {
@@ -273,282 +418,6 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ flex: 1 }}>
             <h3 className="product-card-title" style={{ margin: '0 0 8px 0' }}>{product.name}</h3>
-            
-            {/* Color Display with Thumbnail */}
-            {(() => {
-              const getCurrentColorInfo = () => {
-                if (images && images[currentImageIndex]) {
-                  const currentImage = images[currentImageIndex];
-                  
-                  // DEBUG: Log product data
-                  console.log('🔍 DEBUG ProductCardSlider:', {
-                    productId: product.id,
-                    productName: product.name,
-                    currentImageIndex,
-                    currentImage,
-                    hasVariants: !!product.variants,
-                    variantsCount: product.variants?.length || 0,
-                    hasColors: !!product.colors,
-                    colorsCount: product.colors?.length || 0,
-                    firstVariant: product.variants?.[0],
-                    firstColor: product.colors?.[0]
-                  });
-                  
-                  // FIRST PRIORITY: Use variants data to get exact color from product.variants (EXACT same as ProductDetail)
-                  if (product.variants && product.variants.length > 0) {
-                    console.log('📋 Available variants:', product.variants);
-                    console.log('🔍 Current image index:', currentImageIndex);
-                    console.log('🖼️ Current image:', currentImage);
-                    
-                    // Try to find variant by matching image index
-                    let matchingVariant = product.variants[currentImageIndex];
-                    console.log('🎯 Variant by index:', matchingVariant);
-                    
-                    // If direct index match doesn't work, try to find by image URL
-                    if (!matchingVariant && currentImage) {
-                      console.log('🔍 Trying to find variant by image URL...');
-                      matchingVariant = product.variants.find(variant => {
-                        console.log('🔍 Checking variant:', variant);
-                        console.log('🔍 Comparing:', {
-                          variantImageUrl: variant.imageUrl,
-                          variantImage: variant.image,
-                          currentImage,
-                          match1: variant.imageUrl === currentImage,
-                          match2: variant.image === currentImage,
-                          match3: (Array.isArray(product.images) && product.images[currentImageIndex] === variant.image)
-                        });
-                        return (
-                          variant.imageUrl === currentImage || 
-                          variant.image === currentImage ||
-                          (Array.isArray(product.images) && product.images[currentImageIndex] === variant.image)
-                        );
-                      });
-                      console.log('🎯 Variant by URL:', matchingVariant);
-                    }
-                    
-                    if (matchingVariant) {
-                      // EXACT same as ProductDetail logic
-                      const exactColorName = matchingVariant.colorName || matchingVariant.color;
-                      console.log('✅ Found variant color:', exactColorName, 'from:', matchingVariant);
-                      console.log('🔍 Color fields:', {
-                        colorName: matchingVariant.colorName,
-                        color: matchingVariant.color,
-                        colorCode: matchingVariant.colorCode,
-                        imageUrl: matchingVariant.imageUrl,
-                        image: matchingVariant.image
-                      });
-                      return {
-                        name: exactColorName,
-                        colorCode: matchingVariant.colorCode || null,
-                        imageUrl: matchingVariant.imageUrl || matchingVariant.image || null
-                      };
-                    } else {
-                      console.log('❌ No matching variant found!');
-                    }
-                  } else {
-                    console.log('❌ No variants data available!');
-                  }
-                  
-                  // SECOND PRIORITY: Check if product has colors array
-                  if (product.colors && product.colors.length > 0) {
-                    let colorObj = product.colors[currentImageIndex];
-                    
-                    if (!colorObj && currentImage) {
-                      colorObj = product.colors.find(color => 
-                        color.imageUrl === currentImage || 
-                        color.image === currentImage ||
-                        (Array.isArray(product.images) && product.images[currentImageIndex] === color.image)
-                      );
-                    }
-                    
-                    if (colorObj) {
-                      const exactColorName = colorObj.colorName || colorObj.color;
-                      console.log('✅ Found colors array color:', exactColorName);
-                      return {
-                        name: exactColorName,
-                        colorCode: colorObj.colorCode || null,
-                        imageUrl: colorObj.imageUrl || colorObj.image || currentImage
-                      };
-                    }
-                  }
-                  
-                  // THIRD PRIORITY: Check if image has color property
-                  if (currentImage.color) {
-                    console.log('✅ Found image color:', currentImage.color);
-                    return {
-                      name: currentImage.color,
-                      colorCode: currentImage.colorCode || null,
-                      imageUrl: currentImage.imageUrl || null
-                    };
-                  }
-                  
-                  // LAST PRIORITY: Fallback - Try to get color from image filename or use generic names
-                  const colorNames = ['Black', 'White', 'Blue', 'Red', 'Green', 'Yellow', 'Pink', 'Purple', 'Orange', 'Brown', 'Gray', 'Navy'];
-                  const fallbackName = colorNames[currentImageIndex % colorNames.length];
-                  console.log('⚠️ Using fallback color:', fallbackName);
-                  
-                  return {
-                    name: fallbackName,
-                    colorCode: null,
-                    imageUrl: currentImage
-                  };
-                }
-                return null;
-              };
-              
-              const colorInfo = getCurrentColorInfo();
-              console.log('🎨 Final colorInfo:', colorInfo);
-              
-              // EXACT same as ProductDetail thumbnail design - MULTIPLE THUMBNAILS
-              if (images && images.length > 0) {
-                return (
-                  <div className="thumbnail-images-container" style={{
-                    marginTop: '8px',
-                    marginBottom: '8px',
-                    position: 'relative',
-                    width: '100%',
-                    maxWidth: '350px',
-                    overflow: 'hidden'
-                  }}>
-                    {/* Thumbnail Navigation Buttons */}
-                    {images.length > 3 && (
-                      <>
-                        <button
-                          className="thumbnail-nav-btn thumbnail-prev-btn"
-                          onClick={() => handleThumbnailScroll('left')}
-                          aria-label="Previous thumbnails"
-                        >
-                          ‹
-                        </button>
-                        <button
-                          className="thumbnail-nav-btn thumbnail-next-btn"
-                          onClick={() => handleThumbnailScroll('right')}
-                          aria-label="Next thumbnails"
-                        >
-                          ›
-                        </button>
-                      </>
-                    )}
-                    <div className="thumbnail-images" ref={thumbnailContainerRef} style={{
-                      display: 'flex',
-                      gap: '8px',
-                      overflowX: 'scroll',
-                      overflowY: 'hidden',
-                      padding: '4px 0',
-                      scrollBehavior: 'smooth',
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#ff6b00 #f1f1f1',
-                      scrollSnapType: 'x mandatory',
-                      width: '100%',
-                      flexWrap: 'nowrap',
-                      height: '80px'
-                    }}>
-                      {images.map((img, index) => {
-                        // WORKING SOLUTION: Parse string variations and use color names
-                        const getColorName = () => {
-                          console.log(`🔍 VARIATIONS STRING PARSING:`, {
-                            hasVariations: !!product.variations,
-                            variations: product.variations,
-                            variationsType: typeof product.variations
-                          });
-                          
-                          let parsedVariations = [];
-                          
-                          // Parse variations if it's a string
-                          if (typeof product.variations === 'string') {
-                            try {
-                              parsedVariations = JSON.parse(product.variations);
-                              console.log(`✅ PARSED VARIATIONS:`, parsedVariations);
-                            } catch (e) {
-                              console.log(`❌ JSON PARSE ERROR:`, e);
-                              return `Color ${index + 1}`;
-                            }
-                          } else if (Array.isArray(product.variations)) {
-                            parsedVariations = product.variations;
-                          }
-                          
-                          // Use parsed variations
-                          if (parsedVariations.length > 0) {
-                            const variation = parsedVariations[index] || parsedVariations[0];
-                            const colorName = variation.name || `Color ${index + 1}`;
-                            console.log(`✅ WORKING COLOR NAME:`, colorName, 'for index:', index);
-                            return colorName;
-                          }
-                          
-                          console.log(`❌ NO VARIATIONS - Fallback: Color ${index + 1}`);
-                          return `Color ${index + 1}`;
-                        };
-                        
-                        return (
-                          <div key={index} className="thumbnail-wrapper" style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            flexShrink: 0
-                          }}>
-                            <img
-                              src={getImageUrlLocal(img)}
-                              alt={`${product.name} ${index + 1}`}
-                              className={currentImageIndex === index ? 'active' : ''}
-                              onClick={() => {
-                                // Change the main image when thumbnail clicked
-                                handleThumbnailClick(index);
-                                console.log('Selected thumbnail:', index, getColorName());
-                              }}
-                              style={{
-                                width: '50px',
-                                height: '50px',
-                                borderRadius: '8px',
-                                objectFit: 'cover',
-                                objectPosition: 'center',
-                                border: currentImageIndex === index ? '2px solid #ff6b00' : '1px solid #e0e0e0',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                backgroundColor: '#f8f8f8',
-                                padding: '0px'
-                              }}
-                              onMouseEnter={(e) => {
-                                if (currentImageIndex !== index) {
-                                  e.currentTarget.style.transform = 'scale(1.05)';
-                                  e.currentTarget.style.borderColor = '#ff6b00';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (currentImageIndex !== index) {
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                  e.currentTarget.style.borderColor = '#e0e0e0';
-                                }
-                              }}
-                            />
-                            {/* Color name below thumbnail - EXACT same as ProductDetail */}
-                            <div className="thumbnail-color-name" style={{
-                              fontSize: '0.65rem',
-                              color: '#333',
-                              textAlign: 'center',
-                              lineHeight: '1.2',
-                              maxWidth: '60px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              fontWeight: '600',
-                              marginTop: '2px',
-                              background: '#f8f8f8',
-                              padding: '2px 4px',
-                              borderRadius: '3px',
-                              border: '1px solid #e0e0e0'
-                            }}>
-                              {getColorName()}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
           </div>
           
           <button

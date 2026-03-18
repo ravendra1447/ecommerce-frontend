@@ -29,6 +29,17 @@
   margin: 0 0 0.3rem 0;
 }
 
+/* Hide thumbnails in RecentlyViewed products */
+.recently-viewed-product .thumbnail-images-container,
+.recently-viewed-product .thumbnail-images,
+.recently-viewed-product .thumbnail-wrapper {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .recently-viewed-section-alibaba .section-subtitle-alibaba {
   font-size: 0.9rem;
   color: #666;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
-import ProductCard from '../components/ProductCard';
+import MultiColorProductCard from '../components/MultiColorProductCard';
 import './Products.css';
 
 const Products = () => {
@@ -180,7 +180,7 @@ const Products = () => {
             <>
               <div className="products-grid">
                 {products.map(product => (
-                  <ProductCard key={product._id} product={product} showWishlist={true} />
+                  <MultiColorProductCard key={product._id} product={product} showWishlist={true} />
                 ))}
               </div>
 

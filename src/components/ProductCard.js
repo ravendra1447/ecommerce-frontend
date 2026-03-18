@@ -6,12 +6,18 @@ import { AuthContext } from '../context/AuthContext';
 import { getImageUrl as getImageUrlHelper } from '../utils/config';
 import './ProductCard.css';
 
-const ProductCard = ({ product, showWishlist = true }) => {
+const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) => {
   const { user } = React.useContext(AuthContext);
   const navigate = useNavigate();
   const [inWishlist, setInWishlist] = useState(false);
   const [checkingWishlist, setCheckingWishlist] = useState(false);
   const thumbnailContainerRef = React.useRef(null);
+
+  console.log('🔍 ProductCard Props:', {
+    productName: product?.name,
+    showThumbnails,
+    showWishlist
+  });
 
   const checkWishlistStatus = async () => {
     try {
@@ -118,33 +124,35 @@ const ProductCard = ({ product, showWishlist = true }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Navigate to product detail page with query parameter to open variation modal
-    navigate(`/product-detail/${product._id || product.id}?autoOpen=true`);
+    // Navigate to product detail page
+    navigate(`/product-detail/${product._id || product.id}`);
   };
 
   const handleStartOrder = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Navigate to product detail page with query parameter to open variation modal
-    navigate(`/product-detail/${product._id || product.id}?autoOpen=true`);
+    // Navigate to product detail page
+    navigate(`/product-detail/${product._id || product.id}`);
   };
 
   // Get image URL with proper fallback
   const getImageUrl = () => {
-    if (product.images && product.images.length > 0 && product.images[0]) {
+    // Always use the first available image for related products
+    if (product.images && product.images.length > 0) {
       const img = product.images[0];
-      // Skip external placeholder URLs
+      // Skip external placeholder URLs but still return the image
       if (img.includes('via.placeholder.com') || img.includes('placeholder.com')) {
-        return null;
+        return placeholderImage; // Use our placeholder instead
       }
       // Return full URL if it's already a full URL, otherwise prepend server URL
       return getImageUrlHelper(img);
     }
-    return null;
+    // Always return placeholder if no images
+    return placeholderImage;
   };
 
-  // Base64 encoded placeholder image (simple gray square with text)
-  const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+  // Base64 encoded placeholder image (better quality)
+  const placeholderImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxjaXJjbGUgY3g9IjE1MCIgY3k9IjE0MCIgcj0iMzAiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjE4MCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMjAiIHk9IjE5MCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48cmVjdCB4PSIxMzAiIHk9IjIwMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQiIGZpbGw9IiNkZGRkZGQiLz48dGV4dCB4PSIxNTAiIHk9IjI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5OTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Tm8gSW1hZ2U8L3RleHQ+PC9zdmc+';
   
   const imageUrl = getImageUrl() || placeholderImage;
 
@@ -213,7 +221,141 @@ const ProductCard = ({ product, showWishlist = true }) => {
             <div style={{ flex: 1 }}>
               <h3 className="product-card-title" style={{ margin: '0 0 8px 0' }}>{product.name}</h3>
               
-              {/* Thumbnail section removed for recently visited products */}
+              {/* Thumbnail section - ProductDetail style slider */}
+              {(() => {
+                console.log('🔍 Thumbnail render check:', {
+                  productName: product.name,
+                  showThumbnails,
+                  shouldRender: showThumbnails !== false && product.images && product.images.length > 0,
+                  imagesCount: product.images?.length || 0
+                });
+                return showThumbnails !== false && product.images && product.images.length > 0;
+              })() && (
+                <>
+                  {/* Debug logging */}
+                  {console.log('🔍 ProductCard Thumbnail Debug:', {
+                    productName: product.name,
+                    selectedColor: product.selectedColor,
+                    imagesCount: product.images?.length || 0,
+                    images: product.images
+                  })}
+                  <div className="thumbnail-images-container" style={{
+                    marginTop: '8px',
+                    marginBottom: '8px',
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '350px',
+                    overflow: 'hidden'
+                  }}>
+                    {/* Thumbnail Navigation Buttons */}
+                    {product.images.length > 3 && (
+                      <>
+                        <button
+                          className="thumbnail-nav-btn thumbnail-prev-btn"
+                          onClick={() => handleThumbnailScroll('left')}
+                          aria-label="Previous thumbnails"
+                          style={{
+                            position: 'absolute',
+                            left: '0',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(255, 103, 0, 0.8)',
+                            border: 'none',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            zIndex: '10',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ‹
+                        </button>
+                        <button
+                          className="thumbnail-nav-btn thumbnail-next-btn"
+                          onClick={() => handleThumbnailScroll('right')}
+                          aria-label="Next thumbnails"
+                          style={{
+                            position: 'absolute',
+                            right: '0',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'rgba(255, 103, 0, 0.8)',
+                            border: 'none',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            zIndex: '10',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ›
+                        </button>
+                      </>
+                    )}
+                    <div className="thumbnail-images" ref={thumbnailContainerRef} style={{
+                      display: 'flex',
+                      gap: '8px',
+                      overflowX: 'scroll',
+                      overflowY: 'hidden',
+                      padding: '4px 0',
+                      scrollBehavior: 'smooth',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#ff6b00 #f1f1f1',
+                      scrollSnapType: 'x mandatory',
+                      width: '100%',
+                      flexWrap: 'nowrap',
+                      height: '80px'
+                    }}>
+                      {product.images.map((img, index) => {
+                        console.log(`🖼️ Rendering thumbnail ${index}:`, img);
+                        
+                        return (
+                          <div key={index} className="thumbnail-wrapper" style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '4px',
+                            flexShrink: 0
+                          }}>
+                            <img
+                              src={getImageUrl(img)}
+                              alt={`${product.name} ${index + 1}`}
+                              className={index === 0 ? 'active' : ''}
+                              onClick={() => handleThumbnailClick(index)}
+                              style={{
+                                width: '50px',
+                                height: '50px',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                border: '2px solid #e0e0e0',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                flexShrink: 0
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.style.borderColor = '#ff6700';
+                                e.target.style.transform = 'scale(1.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.target.style.borderColor = '#e0e0e0';
+                                e.target.style.transform = 'scale(1)';
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <button
               onClick={(e) => {
