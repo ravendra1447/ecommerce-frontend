@@ -2017,7 +2017,8 @@ const ProductDetail = () => {
         </div>
       </div>
 
-       {/* Related Products Section */}
+       {/* Related Products Section - TEMPORARILY DISABLED */}
+      {/*
       {(() => {
         console.log('🎨 Rendering related products section. Count:', relatedProducts?.length || 0);
         console.log('🎨 Related products data:', relatedProducts);
@@ -2028,40 +2029,40 @@ const ProductDetail = () => {
           marginTop: '60px',
           padding: '40px 20px',
           background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-          borderRadius: '16px'
+          borderRadius: '15px',
+          position: 'relative'
         }}>
-          <h2 style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            marginBottom: '30px',
-            textAlign: 'center',
-            color: '#2c3e50',
+          <div style={{
             position: 'relative',
-            paddingBottom: '15px'
+            textAlign: 'center',
+            marginBottom: '40px'
           }}>
-            <span style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            <h2 style={{
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              margin: '0',
+              background: 'linear-gradient(135deg, #ff6b00 0%, #ff8c00 50%, #ffa500 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
               Related Products
-            </span>
+            </h2>
             <div style={{
               position: 'absolute',
-              bottom: '0',
+              bottom: '-10px',
               left: '50%',
               transform: 'translateX(-50%)',
               width: '80px',
               height: '4px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(90deg, #ff6b00, #ffa500)',
               borderRadius: '2px'
-            }}></div>
-          </h2>
-          
+            }} />
+          </div>
+
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
             gap: '25px',
             maxWidth: '1400px',
             margin: '0 auto'
@@ -2076,6 +2077,7 @@ const ProductDetail = () => {
           </div>
         </div>
       )}
+      */}
 
       {/* Product Features */}
       <div className="product-features-meesho">
