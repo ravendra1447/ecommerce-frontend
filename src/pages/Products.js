@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
-import MultiColorProductCard from '../components/MultiColorProductCard';
+import ProductCardSlider from '../components/ProductCardSlider';
 import './Products.css';
 
 const Products = () => {
@@ -82,6 +82,8 @@ const Products = () => {
       )}
 
       <div className="products-container">
+        {/* FILTERS SECTION - TEMPORARILY DISABLED */}
+        {/*
         <div className="products-sidebar">
           <h3>FILTERS</h3>
           <div className="products-count">{pagination.total}+ Products</div>
@@ -141,6 +143,7 @@ const Products = () => {
             Clear Filters
           </button>
         </div>
+        */}
 
             <div className="products-content">
               <div className="products-header">
@@ -180,7 +183,9 @@ const Products = () => {
             <>
               <div className="products-grid">
                 {products.map(product => (
-                  <MultiColorProductCard key={product._id} product={product} showWishlist={true} />
+                  <div key={product._id || product.id} className="product-vertical-item">
+                    <ProductCardSlider product={product} />
+                  </div>
                 ))}
               </div>
 

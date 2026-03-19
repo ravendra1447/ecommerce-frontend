@@ -107,7 +107,8 @@ const Home = () => {
       {/* Main Content Section - Categories + Products */}
       <div className="main-content-alibaba">
         <div className="main-container-alibaba">
-          {/* Left Column - Categories List */}
+          {/* Left Column - Categories List - TEMPORARILY DISABLED */}
+          {/*
           <div className="categories-sidebar-alibaba">
             <button 
               className="categories-toggle-mobile"
@@ -131,6 +132,7 @@ const Home = () => {
               ))}
             </div>
           </div>
+          */}
 
           {/* Right Column - Products */}
           <div className="products-main-alibaba">
