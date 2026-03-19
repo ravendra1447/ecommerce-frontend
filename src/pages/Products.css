@@ -31,9 +31,6 @@
 .products-container {
   max-width: 1400px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 2rem;
   padding: 2rem;
   background: white;
 }
@@ -199,34 +196,38 @@
 }
 
 .products-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
 }
 
-/* Desktop: Horizontal layout */
+/* Desktop: Horizontal layout - Exactly 2 columns */
 @media (min-width: 1024px) {
   .products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
   }
 }
 
-/* Large Desktop: More columns */
+/* Large Desktop: Still 2 columns but better spacing */
 @media (min-width: 1400px) {
   .products-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }
 
-/* Tablet: Medium layout */
+/* Tablet: Medium layout - 2 columns */
 @media (min-width: 768px) and (max-width: 1023px) {
   .products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 1.2rem;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.2rem !important;
+    width: 100% !important;
   }
 }
 
@@ -244,6 +245,52 @@
     gap: 0.8rem;
     padding: 0 0.3rem;
   }
+}
+
+/* Products Vertical Grid - Same as Home Page */
+.products-vertical-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0;
+}
+
+/* Desktop: Horizontal layout - Exactly 2 columns */
+@media (min-width: 1024px) {
+  .products-vertical-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.5rem;
+    width: 100%;
+    padding: 0 1rem;
+  }
+  
+  .product-vertical-item {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Large Desktop: 2 columns centered */
+@media (min-width: 1400px) {
+  .products-vertical-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 1.2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+.product-vertical-item {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.product-vertical-item .product-card-slider {
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .product-card {

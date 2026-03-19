@@ -181,7 +181,7 @@ const Products = () => {
             <div className="no-products">No products found</div>
           ) : (
             <>
-              <div className="products-grid">
+              <div className="products-vertical-grid">
                 {products.map(product => (
                   <div key={product._id || product.id} className="product-vertical-item">
                     <ProductCardSlider product={product} />

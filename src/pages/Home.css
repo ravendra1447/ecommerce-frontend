@@ -115,9 +115,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 2rem;
+  display: block; /* Changed from grid since sidebar is disabled */
   width: 100%;
   box-sizing: border-box;
 }
@@ -295,11 +293,11 @@
   padding: 0;
 }
 
-/* Desktop: Horizontal layout */
+/* Desktop: Horizontal layout - Exactly 2 columns */
 @media (min-width: 1024px) {
   .products-vertical-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 1.5rem;
     width: 100%;
     padding: 0 1rem;
@@ -311,11 +309,13 @@
   }
 }
 
-/* Large Desktop: More columns */
+/* Large Desktop: Still 2 columns but better spacing */
 @media (min-width: 1400px) {
   .products-vertical-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 1.2rem;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 }
 
@@ -617,9 +617,9 @@
 
 @media (max-width: 968px) {
   .main-container-alibaba {
-    grid-template-columns: 200px 1fr;
+    padding: 0 1rem;
     gap: 1.5rem;
-    padding: 0 1.5rem;
+    display: block; /* Keep block layout */
   }
 
   .products-grid-alibaba {

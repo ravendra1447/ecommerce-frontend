@@ -9,9 +9,9 @@
   cursor: pointer;
   position: relative;
   border: 1px solid #f0f0f0;
-  width: 100%;
-  min-width: 320px;
-  max-width: none;
+  width: 100% !important;
+  min-width: 280px !important; /* Reduced for better 2-column layout */
+  max-width: none !important;
   height: auto !important;
   display: block !important;
   margin: 0 auto;
