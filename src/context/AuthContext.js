@@ -41,12 +41,34 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const loginMobile = async (phone, mpin, fcm_token) => {
-    const response = await api.post('/auth/login-mobile', { phone, mpin, fcm_token });
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    setUser(response.data.user);
-    return response.data;
+  const loginMobile = async (phone, mpin, password, fcm_token) => {
+    if (!phone) {
+      throw new Error('Phone number is required');
+    }
+    if (!mpin && !password) {
+      throw new Error('Either MPIN or Password is required');
+    }
+    if (mpin && password) {
+      throw new Error('Please provide either MPIN or Password, not both');
+    }
+    if (mpin && (mpin.length < 3 || mpin.length > 6)) {
+      throw new Error('MPIN must be 3-6 digits');
+    }
+    if (password && password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
+    
+    try {
+      const response = await api.post('/auth/login-mobile', { phone, mpin, password, fcm_token });
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      setUser(response.data.user);
+      return response.data;
+    } catch (error) {
+      console.error('Mobile Login Error:', error.response?.data);
+      console.error('Request Data:', { phone, mpin: mpin || 'null', password: password || 'null' });
+      throw error;
+    }
   };
 
   const register = async (userData) => {

@@ -13,15 +13,38 @@ const Login = () => {
     email: '',
     password: '',
     phone: '',
-    mpin: ''
+    mobileCredential: '', // Single field for both MPIN and password
   });
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // Auto-detect MPIN vs Password for mobile login
+    if (name === 'mobileCredential') {
+      // Allow only digits for MPIN (3-6 digits), anything else for password
+      const isDigitsOnly = /^\d*$/.test(value);
+      
+      if (isDigitsOnly && value.length >= 3 && value.length <= 6) {
+        // Likely MPIN
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      } else if (value.length <= 6) {
+        // Could be password or short MPIN
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+      // Don't allow more than 6 characters for mobile credential
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -32,7 +55,36 @@ const Login = () => {
       if (loginType === 'email') {
         await login(formData.email, formData.password);
       } else {
-        await loginMobile(formData.phone, formData.mpin);
+        // Auto-detect MPIN vs Password
+        const credential = formData.mobileCredential;
+        const isDigitsOnly = /^\d+$/.test(credential);
+        
+        console.log('Auto-detecting credential type:', {
+          credential: credential,
+          isDigitsOnly: isDigitsOnly,
+          length: credential.length
+        });
+        
+        // If it's 6 digits, try PASSWORD first (most common case)
+        if (credential.length === 6 && isDigitsOnly) {
+          console.log('Trying password login first (6 digits)...');
+          try {
+            await loginMobile(formData.phone, null, credential);
+            console.log('Password login successful!');
+          } catch (passwordError) {
+            console.log('Password login failed, trying MPIN...', passwordError.response?.data?.message);
+            // If password fails, try MPIN
+            await loginMobile(formData.phone, credential, null);
+          }
+        } else if (isDigitsOnly && credential.length >= 3 && credential.length <= 6) {
+          // 3-5 digits, likely MPIN
+          console.log('Trying MPIN login...');
+          await loginMobile(formData.phone, credential, null);
+        } else {
+          // Non-digits or other length, password
+          console.log('Trying password login...');
+          await loginMobile(formData.phone, null, credential);
+        }
       }
       toast.success('Login successful!');
       
@@ -230,22 +282,22 @@ const Login = () => {
                   placeholder="Enter your phone number (e.g., 919999480404)"
                   pattern="[0-9]{10,12}"
                 />
-                {/* <small>Enter 10-12 digit phone number (with country code)</small> */}
               </div>
+              
               <div className="form-group">
-                <label>MPIN</label>
+                <label>MPIN or Password</label>
                 <input
                   type="password"
-                  name="mpin"
-                  value={formData.mpin}
+                  name="mobileCredential"
+                  value={formData.mobileCredential}
                   onChange={handleChange}
                   required
-                  placeholder="Enter your 4-6 digit MPIN"
-                  minLength="4"
+                  placeholder="Enter your MPIN (3-6 digits) or Password"
                   maxLength="6"
-                  pattern="[0-9]{4,6}"
                 />
-                {/* <small>Enter 4-6 digit MPIN</small> */}
+                <small className="form-help">
+                  Enter 3-6 digit MPIN or your password
+                </small>
               </div>
             </>
           )}
