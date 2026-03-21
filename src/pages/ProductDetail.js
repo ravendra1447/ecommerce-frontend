@@ -479,15 +479,15 @@ const ProductDetail = () => {
     console.log('🔍 getCurrentStock called:', {
       selectedSize,
       selectedColor,
-      stockMaintenanceType: product.stock_maintane_type,
+      stockMaintenanceType: product.stock_mode,
       baseStock: product.stock,
       colorsStock: product.colors?.map(c => ({ name: c.colorName, stock: c.stock }))
     });
     
-    // If stock maintenance type is Unlimited, return Infinity to indicate unlimited stock
-    if (product.stock_maintane_type === 'Unlimited') {
-      console.log('✅ Unlimited stock type detected - IGNORING individual color stock');
-      return Infinity; // Always return unlimited for unlimited stock type
+    // If stock mode is always_available, return Infinity to indicate unlimited stock
+    if (product.stock_mode === 'always_available') {
+      console.log('✅ Always available stock mode detected - IGNORING individual color stock');
+      return Infinity; // Always return unlimited for always available stock mode
     }
     
     // Priority: Variant stock > Size stock > Color stock > Base stock
@@ -744,7 +744,7 @@ const ProductDetail = () => {
             console.log('🔍 Stock validation for:', {
               size,
               colorName,
-              stock_maintane_type: product.stock_maintane_type,
+              stock_mode: product.stock_mode,
               variants: product.variants,
               colors: product.colors,
               sizes: product.sizes,
@@ -752,7 +752,7 @@ const ProductDetail = () => {
             });
             
             let availableStock = 0;
-            if (product.stock_maintane_type === 'Unlimited') {
+            if (product.stock_mode === 'always_available') {
               availableStock = Infinity;
             } else {
               // Check variant stock first
@@ -917,7 +917,7 @@ const ProductDetail = () => {
             
             // Stock validation before adding to cart
             let availableStock = 0;
-            if (product.stock_maintane_type === 'Unlimited') {
+            if (product.stock_mode === 'always_available') {
               availableStock = Infinity;
             } else {
               // Check variant stock first
@@ -1732,7 +1732,7 @@ const ProductDetail = () => {
                     // Calculate total stock for this size
                     const totalStock = sizeVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
                     // Check if product has unlimited stock type
-                    const isUnlimited = product.stock_maintane_type === 'Unlimited';
+                    const isUnlimited = product.stock_mode === 'always_available';
                     // Get the minimum price for this size
                     const minPrice = Math.min(...sizeVariants.map(v => v.price || 0));
                     // Get the maximum price for this size
@@ -1775,11 +1775,11 @@ const ProductDetail = () => {
                         setSelectedSize(sizeItem.size);
                         setQuantity(1);
                       }}
-                      disabled={product.stock_maintane_type === 'Unlimited' ? false : sizeItem.stock <= 0}
+                      disabled={product.stock_mode === 'always_available' ? false : sizeItem.stock <= 0}
                       className={`size-button ${selectedSize === sizeItem.size ? 'selected' : ''}`}
                     >
                       {sizeItem.size}
-                      {product.stock_maintane_type !== 'Unlimited' && sizeItem.stock <= 0 && (
+                      {product.stock_mode !== 'always_available' && sizeItem.stock <= 0 && (
                         <span className="size-out-of-stock-badge">×</span>
                       )}
                     </button>
@@ -1813,7 +1813,7 @@ const ProductDetail = () => {
                         }}
                       >
                         {colorItem.colorName}
-                        {product.stock_maintane_type !== 'Unlimited' && colorItem.stock <= 0 && (
+                        {product.stock_mode !== 'always_available' && colorItem.stock <= 0 && (
                           <span className="size-out-of-stock-badge">×</span>
                         )}
                       </button>
@@ -1840,7 +1840,7 @@ const ProductDetail = () => {
                           setSelectedSize('One Size'); // Auto-select default size
                           setQuantity(1);
                         }}
-                        disabled={product.stock_maintane_type === 'Unlimited' ? false : colorItem.stock <= 0}
+                        disabled={product.stock_mode === 'always_available' ? false : colorItem.stock <= 0}
                         className={`size-button ${selectedColor === colorItem.colorName ? 'selected' : ''}`}
                         style={{
                           position: 'relative',
@@ -1851,7 +1851,7 @@ const ProductDetail = () => {
                         }}
                       >
                         {colorItem.colorName}
-                        {product.stock_maintane_type !== 'Unlimited' && colorItem.stock <= 0 && (
+                        {product.stock_mode !== 'always_available' && colorItem.stock <= 0 && (
                           <span className="size-out-of-stock-badge">×</span>
                         )}
                       </button>
@@ -1902,7 +1902,7 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {product.stock_maintane_type !== 'Unlimited' && (
+          {product.stock_mode !== 'always_available' && (
           <div className="product-stock">
             <span className={getCurrentStock() > 0 ? 'in-stock' : 'out-of-stock'}>
               {getCurrentStock() > 0 
@@ -2391,7 +2391,7 @@ const ProductDetail = () => {
                                 // Get price for this specific size-color combination
                                 let pricePerItem = subtotalData.pricePerItem || getCurrentPrice();
                                 let stockForSize = 0;
-                                const isUnlimited = product.stock_maintane_type === 'Unlimited';
+                                const isUnlimited = product.stock_mode === 'always_available';
                                 
                                 if (!isUnlimited) {
                                   if (product.variants && product.variants.length > 0) {

@@ -496,11 +496,20 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
 
           {/* Stock Status */}
           {(() => {
-            // Check if product has unlimited stock maintenance type
-            if (product.stock_maintane_type === 'Unlimited') {
-              return null; // Don't show out of stock for unlimited stock products
+            console.log('🔍 Stock Status Debug:', {
+              productName: product.name,
+              stock: product.stock,
+              stock_mode: product.stock_mode,
+              stock_maintane_type: product.stock_maintane_type,
+              shouldShowOutOfStock: product.stock === 0 && product.stock_mode !== 'always_available'
+            });
+            
+            // Check if product has unlimited stock mode
+            if (product.stock_mode === 'always_available') {
+              console.log('✅ Always available stock mode - hiding out of stock message');
+              return null; // Don't show out of stock for always available products
             }
-            // Show out of stock only if stock is 0 and not unlimited
+            // Show out of stock only if stock is 0 and not always available
             return product.stock === 0 ? (
               <div className="out-of-stock">Out of Stock</div>
             ) : null;
@@ -508,8 +517,8 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
 
           {/* Action Buttons */}
           {(() => {
-            // Show action buttons if stock is greater than 0 OR if stock maintenance type is Unlimited
-            if (product.stock > 0 || product.stock_maintane_type === 'Unlimited') {
+            // Show action buttons if stock is greater than 0 OR if stock mode is always_available
+            if (product.stock > 0 || product.stock_mode === 'always_available') {
               return (
                 <div className="product-card-actions">
                   <button className="card-btn card-btn-secondary" onClick={handleChatNow}>

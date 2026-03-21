@@ -21,6 +21,8 @@ const RecentlyViewedSection = () => {
   const fetchRecentlyViewed = async () => {
     try {
       const response = await api.get('/products/recently-viewed');
+      console.log('🔍 Recently Viewed API Response:', response.data);
+      console.log('🔍 Recently Viewed Products:', response.data.products);
       setRecentProducts(response.data.products || []);
     } catch (error) {
       console.error('Error fetching recently viewed:', error);
