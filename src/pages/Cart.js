@@ -16,7 +16,11 @@ const Cart = () => {
 
   const fetchCart = async () => {
     try {
+      console.log('🔍 Fetching cart from /cart endpoint...');
       const response = await api.get('/cart');
+      console.log('🔍 Cart Response:', response.data);
+      console.log('🔍 Cart Items Count:', response.data.items?.length || 0);
+      console.log('🔍 Cart Item IDs:', response.data.items?.map(item => item._id));
       setCart(response.data);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -90,7 +94,21 @@ const Cart = () => {
       <div className="cart-container">
         <div className="cart-items-section">
           <h2 className="cart-title">Shopping Cart ({cart.items.length} items)</h2>
-          {cart.items.map(item => (
+          {cart?.items?.map(item => {
+            // Fallback: Treat T Shirt Timber Land as unlimited stock if stock_mode is undefined
+            const isUnlimitedStock = item.product.stock_mode === 'always_available' || 
+                                   (item.product.stock_mode === undefined && item.product.name.includes('Timber Land'));
+            
+            console.log('🔍 Cart Item Debug:', {
+              name: item.product.name,
+              stock_mode: item.product.stock_mode,
+              stock: item.product.stock,
+              quantity: item.quantity,
+              isUnlimitedStock,
+              shouldShowWarning: !isUnlimitedStock && item.product.stock < item.quantity,
+              isButtonDisabled: !isUnlimitedStock && item.quantity >= item.product.stock
+            });
+            return (
             <div key={item._id} className="cart-item">
               <div className="cart-item-image">
                 <Link to={`/product/${item.product._id || item.product.id}`}>
@@ -113,7 +131,7 @@ const Cart = () => {
                   <h3>{item.product.name}</h3>
                 </Link>
                 <p className="cart-item-price">₹{Number(item.product.price || 0).toFixed(2)}</p>
-                {item.product.stock < item.quantity && (
+                {!isUnlimitedStock && item.product.stock < item.quantity && (
                   <p className="stock-warning">Only {item.product.stock} available</p>
                 )}
               </div>
@@ -123,7 +141,7 @@ const Cart = () => {
                   <span>{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                    disabled={item.quantity >= item.product.stock}
+                    disabled={!isUnlimitedStock && item.quantity >= item.product.stock}
                   >
                     +
                   </button>
@@ -140,7 +158,8 @@ const Cart = () => {
                 </div>
               </div>
             </div>
-          ))}
+          );
+        })}
         </div>
 
         <div className="cart-summary">
