@@ -496,17 +496,8 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
 
           {/* Stock Status */}
           {(() => {
-            console.log('🔍 Stock Status Debug:', {
-              productName: product.name,
-              stock: product.stock,
-              stock_mode: product.stock_mode,
-              stock_maintane_type: product.stock_maintane_type,
-              shouldShowOutOfStock: product.stock === 0 && product.stock_mode !== 'always_available'
-            });
-            
             // Check if product has unlimited stock mode
             if (product.stock_mode === 'always_available') {
-              console.log('✅ Always available stock mode - hiding out of stock message');
               return null; // Don't show out of stock for always available products
             }
             // Show out of stock only if stock is 0 and not always available
