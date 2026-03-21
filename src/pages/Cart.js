@@ -5,6 +5,25 @@ import api from '../utils/api';
 import { getImageUrl } from '../utils/config';
 import './Cart.css';
 
+// Add inline styles for variant tags
+const styles = `
+  .cart-item-variants {
+    margin: 5px 0;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .variant-tag {
+    background: #f0f0f0;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    color: #666;
+    border: 1px solid #ddd;
+  }
+`;
+
 const Cart = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
@@ -84,6 +103,7 @@ const Cart = () => {
 
   return (
     <div className="cart-page">
+      <style>{styles}</style>
       {/* Breadcrumb */}
       <div className="breadcrumb-meesho">
         <Link to="/">Home</Link>
@@ -104,6 +124,8 @@ const Cart = () => {
               stock_mode: item.product.stock_mode,
               stock: item.product.stock,
               quantity: item.quantity,
+              size: item.size,
+              color: item.color,
               isUnlimitedStock,
               shouldShowWarning: !isUnlimitedStock && item.product.stock < item.quantity,
               isButtonDisabled: !isUnlimitedStock && item.quantity >= item.product.stock
@@ -130,6 +152,12 @@ const Cart = () => {
                 <Link to={`/product/${item.product._id || item.product.id}`}>
                   <h3>{item.product.name}</h3>
                 </Link>
+                {(item.size || item.color) && (
+                  <div className="cart-item-variants">
+                    {item.size && <span className="variant-tag">Size: {item.size}</span>}
+                    {item.color && <span className="variant-tag">Color: {item.color}</span>}
+                  </div>
+                )}
                 <p className="cart-item-price">₹{Number(item.product.price || 0).toFixed(2)}</p>
                 {!isUnlimitedStock && item.product.stock < item.quantity && (
                   <p className="stock-warning">Only {item.product.stock} available</p>
