@@ -84,8 +84,8 @@ const MultiColorProductCard = ({ product, showWishlist = true, showThumbnails = 
       modifiedProduct.price = colorVariant.price;
     }
     
-    // Update stock if color has specific stock
-    if (colorVariant.stock !== undefined && colorVariant.stock !== null) {
+    // Update stock if color has specific stock, but only if not unlimited stock type
+    if (colorVariant.stock !== undefined && colorVariant.stock !== null && product.stock_maintane_type !== 'Unlimited') {
       modifiedProduct.stock = colorVariant.stock;
     }
     

@@ -495,24 +495,37 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
           </div>
 
           {/* Stock Status */}
-          {product.stock === 0 && (
-            <div className="out-of-stock">Out of Stock</div>
-          )}
+          {(() => {
+            // Check if product has unlimited stock maintenance type
+            if (product.stock_maintane_type === 'Unlimited') {
+              return null; // Don't show out of stock for unlimited stock products
+            }
+            // Show out of stock only if stock is 0 and not unlimited
+            return product.stock === 0 ? (
+              <div className="out-of-stock">Out of Stock</div>
+            ) : null;
+          })()}
 
           {/* Action Buttons */}
-          {product.stock > 0 && (
-            <div className="product-card-actions">
-              <button className="card-btn card-btn-secondary" onClick={handleChatNow}>
-                Chat now
-              </button>
-              <button className="card-btn card-btn-secondary" onClick={handleAddToCart}>
-                Add to cart
-              </button>
-              <button className="card-btn card-btn-primary" onClick={handleStartOrder}>
-                Start order
-              </button>
-            </div>
-          )}
+          {(() => {
+            // Show action buttons if stock is greater than 0 OR if stock maintenance type is Unlimited
+            if (product.stock > 0 || product.stock_maintane_type === 'Unlimited') {
+              return (
+                <div className="product-card-actions">
+                  <button className="card-btn card-btn-secondary" onClick={handleChatNow}>
+                    Chat now
+                  </button>
+                  <button className="card-btn card-btn-secondary" onClick={handleAddToCart}>
+                    Add to cart
+                  </button>
+                  <button className="card-btn card-btn-primary" onClick={handleStartOrder}>
+                    Start order
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       </Link>
     </div>
