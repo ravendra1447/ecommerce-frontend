@@ -1190,7 +1190,7 @@ const Checkout = () => {
                 )}
                 <div className="summary-row">
                   <span>Shipping:</span>
-                  <span>Free</span>
+                  <span>Delivery charges as per Confirmation </span>
                 </div>
                 <div className="summary-row total">
                   <span>Total:</span>
