@@ -37,6 +37,7 @@ const Checkout = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [notificationShown, setNotificationShown] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [showPaymentMethod, setShowPaymentMethod] = useState(true);
 
   useEffect(() => {
     fetchCart();
@@ -214,7 +215,7 @@ const Checkout = () => {
       const response = await api.post('/payment/generate-upi-qr', {
         amount: total,
         orderId: `temp_${Date.now()}`,
-        upiId: 'ravisrivastava278@okicici' // Your UPI ID
+        upiId: '9717365977@pthdfc' // Your UPI ID
       });
       setUpiQRCode(response.data.qrCode);
       setShowUPIQR(true);
@@ -1095,12 +1096,28 @@ const Checkout = () => {
                   <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     💳 Payment Method
                   </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentMethod(!showPaymentMethod)}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      color: '#666'
+                    }}
+                  >
+                    {showPaymentMethod ? 'Hide' : 'Show'}
+                  </button>
                 </div>
+                {showPaymentMethod && (
                 <div className="payment-summary-info" style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 100%)', padding: '1rem', borderRadius: '12px', border: '2px solid #f0f0f0' }}>
                   {formData.paymentMethod === 'COD' ? (
-                    <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
-                      <span className="payment-icon" style={{ fontSize: '1.5rem', filter: 'drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3))' }}>💵</span>
-                      <span>Cash on Delivery</span>
+                    <div className="payment-method-display" style={{ background: '#f5f5f5', borderRadius: '6px', padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#333', fontWeight: '400', border: '1px solid #e0e0e0' }}>
+                      <span className="payment-icon" style={{ fontSize: '1rem' }}>💵</span>
+                      <span style={{ fontSize: '0.8rem' }}>On Confirmation</span>
                     </div>
                   ) : formData.paymentMethod === 'QR Code' ? (
                     <div className="payment-method-display" style={{ background: 'linear-gradient(135deg, #81c784 0%, #a5d6a7 100%)', borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem', color: 'white', fontWeight: '600', boxShadow: '0 4px 15px rgba(129, 199, 132, 0.2)' }}>
@@ -1119,6 +1136,7 @@ const Checkout = () => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
 
               {/* Coupon Section - Toggle Style */}
@@ -1190,7 +1208,7 @@ const Checkout = () => {
                 )}
                 <div className="summary-row">
                   <span>Shipping:</span>
-                  <span>Delivery charges as per Confirmation </span>
+                  <span>Charges as per Confirmation </span>
                 </div>
                 <div className="summary-row total">
                   <span>Total:</span>
