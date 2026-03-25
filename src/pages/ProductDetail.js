@@ -2080,7 +2080,8 @@ const ProductDetail = () => {
       */}
 
       {/* Product Features */}
-      <div className="product-features-meesho">
+
+      {/* <div className="product-features-meesho">
         <div className="feature-item">
           <span className="feature-icon">↻</span>
           <div>
@@ -2109,7 +2110,7 @@ const ProductDetail = () => {
             <p>100% secure transactions</p>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Variation Selection Modal */}
       {showVariationModal && (
