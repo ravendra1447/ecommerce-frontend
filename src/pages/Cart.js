@@ -198,7 +198,7 @@ const Cart = () => {
           </div>
           <div className="summary-row">
             <span>Shipping:</span>
-            <span>Free</span>
+            <span>Charges as per Confirmation</span>
           </div>
           <div className="summary-row total">
             <span>Total:</span>
