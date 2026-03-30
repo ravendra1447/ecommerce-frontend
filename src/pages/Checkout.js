@@ -38,6 +38,8 @@ const Checkout = () => {
   const [notificationShown, setNotificationShown] = useState(false);
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [showPaymentMethod, setShowPaymentMethod] = useState(true);
+  const [termsAccepted, setTermsAccepted] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     fetchCart();
@@ -378,6 +380,11 @@ const Checkout = () => {
     
     if (!validateForm()) {
       toast.error('Please fill in all required fields correctly');
+      return;
+    }
+
+    if (!termsAccepted) {
+      toast.error('Please accept the terms and conditions to place order');
       return;
     }
 
@@ -822,7 +829,7 @@ const Checkout = () => {
                   <button
                     type="submit"
                     className="btn-place-order-desktop"
-                    disabled={orderLoading}
+                    disabled={orderLoading || !termsAccepted}
                   >
                     {orderLoading ? 'Placing Order...' : 'Place Order'}
                   </button>
@@ -1216,12 +1223,77 @@ const Checkout = () => {
                 </div>
               </div>
 
+              {/* Terms and Conditions Section */}
+              <div className="terms-conditions-section" style={{ 
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', 
+                padding: '1rem', 
+                borderRadius: '12px', 
+                border: '2px solid #dee2e6', 
+                marginBottom: '1rem',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    style={{
+                      marginTop: '0.25rem',
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer',
+                      accentColor: '#16a34a'
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <label htmlFor="terms-checkbox" style={{ 
+                      cursor: 'pointer', 
+                      fontSize: '0.9rem', 
+                      fontWeight: '600', 
+                      color: '#333',
+                      lineHeight: '1.4',
+                      display: 'block',
+                      marginBottom: '0.5rem'
+                    }}>
+                      I agree to the Terms & Conditions
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsModal(true)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid #16a34a',
+                        color: '#16a34a',
+                        borderRadius: '6px',
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.8rem',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        textDecoration: 'none'
+                      }}
+                      onMouseOver={(e) => {
+                        e.target.style.background = '#16a34a';
+                        e.target.style.color = 'white';
+                      }}
+                      onMouseOut={(e) => {
+                        e.target.style.background = 'none';
+                        e.target.style.color = '#16a34a';
+                      }}
+                    >
+                      📄 Read Terms & Conditions
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Place Order Button */}
               <div className="order-summary-actions">
                 <button
                   type="submit"
                   className="btn-place-order-summary"
-                  disabled={orderLoading}
+                  disabled={orderLoading || !termsAccepted}
                   onClick={handleSubmit}
                 >
                   {orderLoading ? 'Placing Order...' : 'Place Order'}
@@ -1231,6 +1303,176 @@ const Checkout = () => {
           )}
         </div>
       </div>
+
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div className="terms-modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div className="terms-modal-content" style={{
+            background: 'white',
+            borderRadius: '16px',
+            maxWidth: '600px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'hidden',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+          }}>
+            <div className="terms-modal-header" style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+              color: 'white',
+              padding: '1.5rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700' }}>
+                📋 Shipping, Risk Transfer & Damage Liability Clause
+              </h3>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  padding: '0.25rem',
+                  borderRadius: '4px',
+                  transition: 'background 0.3s ease'
+                }}
+                onMouseOver={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+                onMouseOut={(e) => e.target.style.background = 'none'}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="terms-modal-body" style={{
+              padding: '1.5rem',
+              maxHeight: '60vh',
+              overflowY: 'auto',
+              fontSize: '0.9rem',
+              lineHeight: '1.6'
+            }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ color: '#16a34a', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                  1. Dispatch & Packaging
+                </h4>
+                <p style={{ margin: 0, color: '#555' }}>
+                  The Company undertakes to use reasonable care in the packaging and dispatch of all products to ensure they are in good condition at the time of shipment.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ color: '#16a34a', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                  2. Transfer of Risk
+                </h4>
+                <p style={{ margin: 0, color: '#555' }}>
+                  All risk of loss, damage, or deterioration to the products shall pass to the Customer upon handing over the shipment to the courier, logistics provider, or carrier ("Carrier"). From this point onward, the Company shall have no control over the handling of the shipment.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ color: '#16a34a', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                  3. Limitation of Liability
+                </h4>
+                <p style={{ margin: 0, color: '#555' }}>
+                  The Company shall not be held liable for any loss, damage, delay, tampering, or deterioration of goods occurring during transit, once the shipment has been handed over to the Carrier. This includes, but is not limited to, physical damage to the product or its packaging.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ color: '#16a34a', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                  4. Customer Responsibility at Delivery
+                </h4>
+                <p style={{ margin: 0, color: '#555', marginBottom: '0.5rem' }}>
+                  The Customer is solely responsible for inspecting the package at the time of delivery:
+                </p>
+                <ul style={{ margin: '0.5rem 0 0 1.5rem', color: '#555' }}>
+                  <li style={{ marginBottom: '0.25rem' }}>
+                    If the package appears damaged, tampered, or opened, the Customer must refuse delivery or note the issue with the delivery agent.
+                  </li>
+                  <li style={{ marginBottom: '0.25rem' }}>
+                    Acceptance of the package without objection shall be deemed as confirmation that the goods were received in proper condition.
+                  </li>
+                </ul>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ color: '#16a34a', fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem' }}>
+                  5. Courier Liability
+                </h4>
+                <p style={{ margin: 0, color: '#555' }}>
+                  Any claim for damage during transit shall be subject to the terms and conditions of the respective Carrier. The Company may, at its sole discretion, assist the Customer in raising a claim with the Carrier but shall not be obligated to provide compensation.
+                </p>
+              </div>
+
+              <div style={{
+                background: '#f8f9fa',
+                border: '2px solid #dee2e6',
+                borderRadius: '8px',
+                padding: '1rem',
+                marginTop: '1.5rem'
+              }}>
+                <p style={{ 
+                  margin: 0, 
+                  color: '#333', 
+                  fontWeight: '600',
+                  fontSize: '0.9rem',
+                  textAlign: 'center'
+                }}>
+                  🔒 <strong>By placing an order, the Customer agrees to the above terms and acknowledges that the Company shall not be liable for transit-related damages.</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="terms-modal-footer" style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #dee2e6',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '0.75rem'
+            }}>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                style={{
+                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.75rem 1.5rem',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #15803d 0%, #14532d 100%)';
+                  e.target.style.transform = 'translateY(-2px)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.background = 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+                  e.target.style.transform = 'translateY(0)';
+                }}
+              >
+                ✅ I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
