@@ -119,12 +119,12 @@ const Orders = () => {
               <Link to={`/orders/tracking/${order._id || order.id}`} className="track-order-link">
                 📍 Track Order
               </Link>
-              <button 
+              {/* <button 
                 onClick={() => downloadInvoice(order._id || order.id)} 
                 className="btn-download-invoice"
               >
                 📄 Download Invoice
-              </button>
+              </button> */}
             </div>
             <div className="info-row">
               <span>Order Date:</span>
@@ -138,7 +138,7 @@ const Orders = () => {
             </div>
             <div className="info-row">
               <span>Payment Method:</span>
-              <span>{order.paymentMethod || order.payment_method}</span>
+              <span>{(order.paymentMethod || order.payment_method) === 'COD' ? 'After Confirmation' : (order.paymentMethod || order.payment_method)}</span>
             </div>
             <div className="info-row">
               <span>Payment Status:</span>
@@ -297,12 +297,12 @@ const Orders = () => {
                     >
                       📍 Track
                     </Link>
-                    <button 
+                    {/* <button 
                       onClick={() => downloadInvoice(order._id || order.id)} 
                       className="btn-download-invoice-small"
                     >
                       📄 Invoice
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
