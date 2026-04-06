@@ -46,9 +46,9 @@ const Home = () => {
     try {
       const [categoriesRes, featuredRes, trendingRes, newRes] = await Promise.allSettled([
         api.get('/products/categories/list'),
-        api.get('/products?limit=12&sortBy=rating'),
-        api.get('/products?limit=12&sortBy=rating'),
-        api.get('/products?limit=12&sortBy=newest')
+        api.get('/products?sortBy=rating'),
+        api.get('/products?sortBy=rating'),
+        api.get('/products?sortBy=newest')
       ]);
       
       if (categoriesRes.status === 'fulfilled') {

@@ -527,6 +527,10 @@
   color: #E65100;
 }
 
+.product-status-admin {
+  margin: 0.5rem 0;
+}
+
 .btn-approve,
 .btn-reject,
 .btn-activate {
