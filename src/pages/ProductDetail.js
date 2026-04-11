@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../utils/api';
 import { AuthContext } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import './ProductDetail.css';
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user } = React.useContext(AuthContext);
   const [product, setProduct] = useState(null);
@@ -160,6 +161,29 @@ const ProductDetail = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Save scroll position when navigating away from product detail
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Save current scroll position for potential restoration
+      const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      sessionStorage.setItem('productDetailScrollPosition', scrollPosition.toString());
+    };
+
+    // Save position when page is hidden (mobile app switching, tab switching)
+    const handlePageHide = () => {
+      handleBeforeUnload();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+      handleBeforeUnload();
+    };
+  }, []);
 
   // Keyboard navigation for lightbox
   useEffect(() => {
@@ -1080,7 +1104,7 @@ const ProductDetail = () => {
     <div className="product-detail">
       {/* Breadcrumb */}
       <div className="breadcrumb-meesho">
-        <Link to="/">Home</Link>
+        <Link to="/" state={{ fromProductDetail: true }}>Home</Link>
         <span> / </span>
         <Link to="/products">Products</Link>
         {product.category && (

@@ -32,6 +32,13 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 
 function App() {
+  // Block React Router's default scroll restoration
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <Router>

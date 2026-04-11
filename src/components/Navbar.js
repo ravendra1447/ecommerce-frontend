@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../utils/api';
 import './Navbar.css';
@@ -7,6 +7,7 @@ import './Navbar.css';
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [cartCount, setCartCount] = useState(0);
   const [categories, setCategories] = useState([]);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
@@ -104,7 +105,11 @@ const Navbar = () => {
         {/* Main Header */}
         <div className="navbar-header">
           <div className="navbar-header-container">
-            <Link to="/" className="navbar-logo">
+            <Link 
+              to="/" 
+              className="navbar-logo"
+              state={location.pathname.startsWith('/product') ? { fromProductDetail: true } : undefined}
+            >
               <h1>Bangkok <span>Mart</span></h1>
             </Link>
             

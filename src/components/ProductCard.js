@@ -124,15 +124,27 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Save product click info for scroll restoration
+    const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+    sessionStorage.setItem('clickedProductId', product._id || product.id);
+    sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+    sessionStorage.setItem('mobileProductClick', 'true');
+    
     // Navigate to product detail page
-    navigate(`/product-detail/${product._id || product.id}`);
+    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
   };
 
   const handleStartOrder = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Save product click info for scroll restoration
+    const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+    sessionStorage.setItem('clickedProductId', product._id || product.id);
+    sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+    sessionStorage.setItem('mobileProductClick', 'true');
+    
     // Navigate to product detail page
-    navigate(`/product-detail/${product._id || product.id}`);
+    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
   };
 
   // Get image URL with proper fallback
@@ -182,7 +194,18 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
 
   return (
     <div className="product-card-wrapper">
-      <Link to={`/product-detail/${product._id || product.id}`} className="product-card">
+      <Link 
+        to={`/product-detail/${product._id || product.id}`} 
+        state={{ fromHome: true }}
+        className="product-card"
+        onClick={(e) => {
+          // Save product click info for scroll restoration
+          const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+          sessionStorage.setItem('clickedProductId', product._id || product.id);
+          sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+          sessionStorage.setItem('mobileProductClick', 'true');
+        }}
+      >
         <div className="product-image-container">
           <div className="product-image">
             <img
@@ -226,167 +249,22 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
         <div className="product-info">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
             <div style={{ flex: 1 }}>
-              <h3 className="product-card-title" style={{ margin: '0 0 8px 0' }}>{product.name}</h3>
+              <h3 className="product-card-title" style={{ margin: '0 0 1px 0' }}>{product.name}</h3>
               
-              {/* Thumbnail section - ProductDetail style slider */}
-              {(() => {
-                console.log('🔍 Thumbnail render check:', {
-                  productName: product.name,
-                  showThumbnails,
-                  shouldRender: showThumbnails !== false && product.images && product.images.length > 0,
-                  imagesCount: product.images?.length || 0
-                });
-                return showThumbnails !== false && product.images && product.images.length > 0;
-              })() && (
-                <>
-                  {/* Debug logging */}
-                  {console.log('🔍 ProductCard Thumbnail Debug:', {
-                    productName: product.name,
-                    selectedColor: product.selectedColor,
-                    imagesCount: product.images?.length || 0,
-                    images: product.images
-                  })}
-                  <div className="thumbnail-images-container" style={{
-                    marginTop: '8px',
-                    marginBottom: '8px',
-                    position: 'relative',
-                    width: '100%',
-                    maxWidth: '350px',
-                    overflow: 'hidden'
-                  }}>
-                    {/* Thumbnail Navigation Buttons */}
-                    {product.images.length > 3 && (
-                      <>
-                        <button
-                          className="thumbnail-nav-btn thumbnail-prev-btn"
-                          onClick={() => handleThumbnailScroll('left')}
-                          aria-label="Previous thumbnails"
-                          style={{
-                            position: 'absolute',
-                            left: '0',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'rgba(255, 103, 0, 0.8)',
-                            border: 'none',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            zIndex: '10',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          ‹
-                        </button>
-                        <button
-                          className="thumbnail-nav-btn thumbnail-next-btn"
-                          onClick={() => handleThumbnailScroll('right')}
-                          aria-label="Next thumbnails"
-                          style={{
-                            position: 'absolute',
-                            right: '0',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'rgba(255, 103, 0, 0.8)',
-                            border: 'none',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '24px',
-                            height: '24px',
-                            cursor: 'pointer',
-                            zIndex: '10',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          ›
-                        </button>
-                      </>
-                    )}
-                    <div className="thumbnail-images" ref={thumbnailContainerRef} style={{
-                      display: 'flex',
-                      gap: '8px',
-                      overflowX: 'scroll',
-                      overflowY: 'hidden',
-                      padding: '4px 0',
-                      scrollBehavior: 'smooth',
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#ff6b00 #f1f1f1',
-                      scrollSnapType: 'x mandatory',
-                      width: '100%',
-                      flexWrap: 'nowrap',
-                      height: '80px'
-                    }}>
-                      {product.images.map((img, index) => {
-                        console.log(`🖼️ Rendering thumbnail ${index}:`, img);
-                        
-                        const getColorName = () => {
-                          if (product.selectedColor) {
-                            return `${product.selectedColor}`;
-                          }
-                          return `Color ${index + 1}`;
-                        };
-                        
-                        return (
-                          <div key={index} className="thumbnail-wrapper" style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: '4px',
-                            flexShrink: 0
-                          }}>
-                            <img
-                              src={getImageUrl(img)}
-                              alt={`${product.name} ${index + 1}`}
-                              className={index === 0 ? 'active' : ''}
-                              onClick={() => handleThumbnailClick(index)}
-                              style={{
-                                width: '50px',
-                                height: '50px',
-                                objectFit: 'cover',
-                                borderRadius: '8px',
-                                border: '2px solid #e0e0e0',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                                flexShrink: 0
-                              }}
-                              onMouseEnter={(e) => {
-                                e.target.style.borderColor = '#ff6700';
-                                e.target.style.transform = 'scale(1.05)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.target.style.borderColor = '#e0e0e0';
-                                e.target.style.transform = 'scale(1)';
-                              }}
-                            />
-                            <span style={{
-                              fontSize: '10px',
-                              color: '#666',
-                              textAlign: 'center',
-                              maxWidth: '60px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}>
-                              {getColorName()}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Thumbnail section removed to make card smaller */}
             </div>
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                navigate(`/product-detail/${product._id || product.id}`);
+                // Save product click info for scroll restoration
+                const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+                sessionStorage.setItem('clickedProductId', product._id || product.id);
+                sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+                sessionStorage.setItem('mobileProductClick', 'true');
+                
+                // Navigate with state
+                navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
               }}
               style={{
                 background: 'none',
@@ -397,7 +275,9 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
                 padding: '4px 8px',
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'transform 0.2s ease'
+                transition: 'transform 0.2s ease',
+                alignSelf: 'flex-start',
+                marginTop: '0'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateX(4px)';
@@ -413,8 +293,16 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
             </button>
           </div>
           
-          {/* MOQ and Views */}
-          <div className="product-meta-info">
+          {/* MOQ and Views - Same Line with Views Next to MOQ */}
+          <div className="product-meta-info" style={{ 
+            display: 'flex', 
+            justifyContent: 'flex-start', 
+            alignItems: 'center',
+            margin: '0',
+            padding: '0',
+            fontSize: '11px',
+            gap: '12px'
+          }}>
             {(() => {
               // Check for sale_min_qty in different possible formats
               const moqRaw = product.sale_min_qty !== undefined ? product.sale_min_qty : 
@@ -433,26 +321,38 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
               
               // Always show MOQ (default is 1)
               return (
-                <div className="moq-info">
-                  <span className="moq-label">MOQ:</span>
-                  <span className="moq-value">{moqValue} pieces</span>
+                <div className="moq-info" style={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  gap: '3px',
+                  margin: '0'
+                }}>
+                  <span className="moq-label" style={{ 
+                    fontSize: '10px', 
+                    color: '#666',
+                    fontWeight: '500'
+                  }}>MOQ:</span>
+                  <span className="moq-value" style={{ 
+                    fontSize: '10px', 
+                    color: '#333',
+                    fontWeight: '600'
+                  }}>{moqValue} pieces</span>
                 </div>
               );
             })()}
-            <div className="views-info">
-              <span>👁️  {product.viewCount || product.view_count || 0} views</span>
+            <div className="views-info" style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              margin: '0'
+            }}>
+              <span style={{ 
+                fontSize: '10px', 
+                color: '#666'
+              }}>👁️  {product.viewCount || product.view_count || 0} views</span>
             </div>
           </div>
 
-          {/* Category and SubCategory Info */}
-          {(product.category || product.subcategory) && (
-            <div className="supplier-info">
-              <span className="supplier-location">
-                {product.category || 'Category'}
-                {product.subcategory && ` • ${product.subcategory}`}
-              </span>
-            </div>
-          )}
+          {/* Category and SubCategory Info removed to make card smaller */}
 
           {/* Price and Rating */}
           <div className="product-card-price-rating">

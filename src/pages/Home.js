@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSlider from '../components/ProductCardSlider';
@@ -10,12 +11,14 @@ import { getImageUrl } from '../utils/config';
 import './Home.css';
 
 const Home = () => {
+  const location = useLocation();
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [trendingProducts, setTrendingProducts] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCategories, setShowCategories] = useState(window.innerWidth > 768);
+  const scrollPositionRef = useRef(0);
 
   // Utility function to ensure products have valid image URLs
   const processProducts = (products) => {
@@ -79,6 +82,215 @@ const Home = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Save product position before leaving - mobile-specific approach
+  useEffect(() => {
+    // Detect if it's a real mobile device
+    const isMobileDevice = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768 && 'ontouchstart' in window);
+    };
+
+    // Save scroll position with mobile optimization
+    const handleScroll = () => {
+      const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+      sessionStorage.setItem('homeScrollPosition', scrollPosition.toString());
+      
+      // Find which product is currently in view (mobile-friendly)
+      const productElements = document.querySelectorAll('[data-product-id]');
+      let closestProduct = null;
+      let minDistance = Infinity;
+      
+      productElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        const elementCenter = rect.top + window.pageYOffset + (rect.height / 2);
+        const distance = Math.abs(elementCenter - (scrollPosition + window.innerHeight / 2));
+        
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestProduct = element;
+        }
+      });
+      
+      if (closestProduct) {
+        const productId = closestProduct.getAttribute('data-product-id');
+        const productPosition = closestProduct.getBoundingClientRect().top + window.pageYOffset;
+        sessionStorage.setItem('lastViewedProductId', productId);
+        sessionStorage.setItem('lastViewedProductPosition', productPosition.toString());
+        sessionStorage.setItem('isRealMobile', isMobileDevice().toString());
+      }
+    };
+
+    // Mobile-specific touch events
+    const handleTouchEnd = () => {
+      setTimeout(() => {
+        handleScroll();
+      }, 150); // Increased delay for mobile
+    };
+
+    const handleTouchMove = () => {
+      setTimeout(() => {
+        handleScroll();
+      }, 100);
+    };
+
+    // Add mobile-specific events
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    if (isMobileDevice()) {
+      window.addEventListener('touchend', handleTouchEnd, { passive: true });
+      window.addEventListener('touchmove', handleTouchMove, { passive: true });
+      window.addEventListener('orientationchange', () => {
+        setTimeout(handleScroll, 500); // Delay for orientation change
+      });
+    } else {
+      window.addEventListener('mouseup', () => setTimeout(handleScroll, 100));
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (isMobileDevice()) {
+        window.removeEventListener('touchend', handleTouchEnd);
+        window.removeEventListener('touchmove', handleTouchMove);
+      } else {
+        window.removeEventListener('mouseup', () => setTimeout(handleScroll, 100));
+      }
+    };
+  }, []);
+
+  // Block scroll restoration completely - prevent any auto-scroll
+  useEffect(() => {
+    // Block React Router's default scroll restoration
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual';
+    }
+    
+    // Prevent any scroll to top on route changes
+    const blockScrollToTop = () => {
+      window.scrollTo(0, 0);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 0);
+    };
+    
+    // Block scroll restoration on popstate
+    const handlePopState = (event) => {
+      event.preventDefault();
+      window.history.scrollRestoration = 'manual';
+      return false;
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Restore to specific product when component mounts - mobile-optimized
+  useEffect(() => {
+    // Detect if it's a real mobile device
+    const isMobileDevice = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768 && 'ontouchstart' in window);
+    };
+
+    // Prioritize clicked product over scrolled product
+    const clickedProductId = sessionStorage.getItem('clickedProductId');
+    const clickedProductPosition = sessionStorage.getItem('clickedProductPosition');
+    const lastViewedProductId = sessionStorage.getItem('lastViewedProductId');
+    const lastViewedProductPosition = sessionStorage.getItem('lastViewedProductPosition');
+    const isRealMobile = sessionStorage.getItem('isRealMobile') === 'true';
+    
+    // Use clicked product first, fallback to scrolled product
+    const targetProductId = clickedProductId || lastViewedProductId;
+    const targetProductPosition = clickedProductPosition || lastViewedProductPosition;
+    
+    // Utility function to set scroll position
+    const setScrollPosition = (position) => {
+      if (document.documentElement) {
+        document.documentElement.scrollTop = position;
+      }
+      if (document.body) {
+        document.body.scrollTop = position;
+      }
+      if (window.scrollTo) {
+        window.scrollTo(0, position);
+      }
+    };
+    
+    // Mobile-specific restoration with multiple attempts
+    const attemptMobileRestore = (delay = 0) => {
+      setTimeout(() => {
+        // Set target position immediately
+        if (targetProductPosition) {
+          const position = parseInt(targetProductPosition, 10);
+          if (!isNaN(position) && position > 0) {
+            setScrollPosition(position);
+          }
+        }
+        
+        // Find and highlight product
+        const targetProduct = document.querySelector(`[data-product-id="${targetProductId}"]`);
+        
+        if (targetProduct) {
+          // Calculate exact position for product
+          const isMobile = isMobileDevice();
+          const productPosition = targetProduct.getBoundingClientRect().top + window.pageYOffset;
+          const targetScrollPosition = productPosition - (isMobile ? 60 : 100);
+          
+          // Set position to show product
+          setScrollPosition(targetScrollPosition);
+          
+          // Apply highlight immediately
+          targetProduct.style.transition = 'all 0.3s ease';
+          targetProduct.style.backgroundColor = 'rgba(255, 107, 0, 0.15)';
+          targetProduct.style.border = '3px solid #ff6b00';
+          targetProduct.style.borderRadius = '12px';
+          targetProduct.style.boxShadow = '0 0 20px rgba(255, 107, 0, 0.4)';
+          
+          // Remove highlight after delay
+          setTimeout(() => {
+            targetProduct.style.backgroundColor = '';
+            targetProduct.style.border = '';
+            targetProduct.style.borderRadius = '';
+            targetProduct.style.boxShadow = '';
+          }, 2500);
+          
+          // Mobile feedback removed - no toast notification
+          
+          // Clear mobile flags
+          sessionStorage.removeItem('mobileProductClick');
+          sessionStorage.removeItem('clickedProductId');
+          sessionStorage.removeItem('clickedProductPosition');
+          
+        } else if (delay < 1000) {
+          // Retry for mobile devices
+          attemptMobileRestore(delay + 200);
+        }
+      }, delay);
+    };
+
+    // Start restoration immediately for mobile, with retries
+    if (isRealMobile) {
+      attemptMobileRestore(0);
+    } else {
+      // Desktop - immediate restoration
+      if (targetProductPosition) {
+        const position = parseInt(targetProductPosition, 10);
+        if (!isNaN(position) && position > 0) {
+          setScrollPosition(position);
+        }
+      }
+      
+      const targetProduct = document.querySelector(`[data-product-id="${targetProductId}"]`);
+      if (targetProduct) {
+        const productPosition = targetProduct.getBoundingClientRect().top + window.pageYOffset;
+        const targetScrollPosition = productPosition - 100;
+        setScrollPosition(targetScrollPosition);
+      }
+    }
+  }, [location, loading]); // Include loading to ensure content is loaded
 
   if (loading) {
     return <div className="loading">Loading...</div>;
@@ -147,7 +359,7 @@ const Home = () => {
                 </div>
                 <div className="products-vertical-grid">
                   {featuredProducts.map(product => (
-                    <div key={product._id || product.id} className="product-vertical-item">
+                    <div key={product._id || product.id} className="product-vertical-item" data-product-id={product._id || product.id}>
                       <ProductCardSlider product={product} />
                     </div>
                   ))}
@@ -181,7 +393,17 @@ const Home = () => {
                       <Link
                         key={product._id || product.id}
                         to={`/product/${product._id || product.id}`}
+                        state={{ fromHome: true }}
                         className="recommended-product-item"
+                        data-product-id={product._id || product.id}
+                        onClick={(e) => {
+                          // Save product click info for mobile
+                          const productElement = e.currentTarget;
+                          const productPosition = productElement.getBoundingClientRect().top + window.pageYOffset;
+                          sessionStorage.setItem('clickedProductId', product._id || product.id);
+                          sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+                          sessionStorage.setItem('mobileProductClick', 'true');
+                        }}
                       >
                         <div className="recommended-product-image">
                           {product.images && product.images.length > 0 ? (
@@ -232,7 +454,17 @@ const Home = () => {
                       <Link
                         key={product._id || product.id}
                         to={`/product/${product._id || product.id}`}
+                        state={{ fromHome: true }}
                         className="recommended-product-item"
+                        data-product-id={product._id || product.id}
+                        onClick={(e) => {
+                          // Save product click info for mobile
+                          const productElement = e.currentTarget;
+                          const productPosition = productElement.getBoundingClientRect().top + window.pageYOffset;
+                          sessionStorage.setItem('clickedProductId', product._id || product.id);
+                          sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+                          sessionStorage.setItem('mobileProductClick', 'true');
+                        }}
                       >
                         <div className="recommended-product-image">
                           {product.images && product.images.length > 0 ? (
@@ -283,7 +515,17 @@ const Home = () => {
                       <Link
                         key={product._id || product.id}
                         to={`/product/${product._id || product.id}`}
+                        state={{ fromHome: true }}
                         className="recommended-product-item"
+                        data-product-id={product._id || product.id}
+                        onClick={(e) => {
+                          // Save product click info for mobile
+                          const productElement = e.currentTarget;
+                          const productPosition = productElement.getBoundingClientRect().top + window.pageYOffset;
+                          sessionStorage.setItem('clickedProductId', product._id || product.id);
+                          sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+                          sessionStorage.setItem('mobileProductClick', 'true');
+                        }}
                       >
                         <div className="recommended-product-image">
                           {product.images && product.images.length > 0 ? (

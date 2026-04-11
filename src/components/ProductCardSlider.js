@@ -295,7 +295,14 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
 
 
   const handleCardClick = () => {
-    navigate(`/product-detail/${product.id}`);
+    // Save product click info for scroll restoration
+    const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+    sessionStorage.setItem('clickedProductId', product._id || product.id);
+    sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+    sessionStorage.setItem('mobileProductClick', 'true');
+    
+    // Navigate with state
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
   };
 
   const handleChatNow = (e) => {
@@ -306,14 +313,26 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+    // Save product click info for scroll restoration
+    const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+    sessionStorage.setItem('clickedProductId', product._id || product.id);
+    sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+    sessionStorage.setItem('mobileProductClick', 'true');
+    
     // Navigate to product detail page
-    navigate(`/product-detail/${product.id}`);
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
   };
 
   const handleStartOrder = (e) => {
     e.stopPropagation();
+    // Save product click info for scroll restoration
+    const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+    sessionStorage.setItem('clickedProductId', product._id || product.id);
+    sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+    sessionStorage.setItem('mobileProductClick', 'true');
+    
     // Navigate to product detail page
-    navigate(`/product-detail/${product.id}`);
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
   };
 
   if (!product) return null;
@@ -424,7 +443,14 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              navigate(`/product-detail/${product.id}`);
+              // Save product click info for scroll restoration
+              const productPosition = window.pageYOffset || document.documentElement.scrollTop;
+              sessionStorage.setItem('clickedProductId', product._id || product.id);
+              sessionStorage.setItem('clickedProductPosition', productPosition.toString());
+              sessionStorage.setItem('mobileProductClick', 'true');
+              
+              // Navigate with state
+              navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
             }}
             style={{
               background: 'none',

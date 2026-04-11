@@ -99,6 +99,15 @@
 
 .product-card-wrapper {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  height: 100%;
+  margin: 2px;
 }
 
 .product-card {
@@ -119,7 +128,7 @@
 
 .product-card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  transform: translateY(-6px);
+  transform: translateY(-3px);
   border-color: #FF6A00;
 }
 
@@ -241,7 +250,7 @@
 }
 
 .product-info {
-  padding: 8px;
+  padding: 4px;
   background: white;
   flex: 1;
   display: flex;
