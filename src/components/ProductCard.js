@@ -16,7 +16,8 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
   console.log('🔍 ProductCard Props:', {
     productName: product?.name,
     showThumbnails,
-    showWishlist
+    showWishlist,
+    selectedColor: product?.selectedColor
   });
 
   const checkWishlistStatus = async () => {
@@ -124,6 +125,13 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Navigate to product detail page for cart operations
+    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
+  };
+
+  const handleProductClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Save product click info for scroll restoration
     const productPosition = window.pageYOffset || document.documentElement.scrollTop;
     sessionStorage.setItem('clickedProductId', product._id || product.id);
@@ -131,7 +139,8 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
     sessionStorage.setItem('mobileProductClick', 'true');
     
     // Navigate to product detail page
-    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
+    console.log('🚀 handleProductClick - Navigating with selectedColor:', product.selectedColor);
+    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
   };
 
   const handleStartOrder = (e) => {
@@ -144,7 +153,8 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
     sessionStorage.setItem('mobileProductClick', 'true');
     
     // Navigate to product detail page
-    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
+    console.log('🚀 handleStartOrder - Navigating with selectedColor:', product.selectedColor);
+    navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
   };
 
   // Get image URL with proper fallback
@@ -196,7 +206,7 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
     <div className="product-card-wrapper">
       <Link 
         to={`/product-detail/${product._id || product.id}`} 
-        state={{ fromHome: true }}
+        state={{ fromHome: true, selectedColor: product.selectedColor }}
         className="product-card"
         onClick={(e) => {
           // Save product click info for scroll restoration
@@ -264,7 +274,7 @@ const ProductCard = ({ product, showWishlist = true, showThumbnails = true }) =>
                 sessionStorage.setItem('mobileProductClick', 'true');
                 
                 // Navigate with state
-                navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true } });
+                navigate(`/product-detail/${product._id || product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
               }}
               style={{
                 background: 'none',

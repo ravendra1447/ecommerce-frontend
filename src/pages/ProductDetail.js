@@ -15,6 +15,7 @@ const ProductDetail = () => {
   const { user } = React.useContext(AuthContext);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   
@@ -91,10 +92,28 @@ const ProductDetail = () => {
         if (product.variants && product.variants.length > 0) {
           const colorVariants = product.variants.filter(v => v.colorName === firstColor);
           sizesForColor = [...new Set(colorVariants.map(v => v.size))];
+          // Sort sizes numerically if they are numbers, otherwise alphabetically
+          sizesForColor.sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
         } else {
           sizesForColor = product.sizes && product.sizes.length > 0 
             ? product.sizes.map(s => s.size)
             : ['One Size'];
+          // Sort sizes numerically if they are numbers, otherwise alphabetically
+          sizesForColor.sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
         }
         
         sizesForColor.forEach(size => {
@@ -131,6 +150,17 @@ const ProductDetail = () => {
     fetchProduct();
     fetchRelatedProducts();
     trackRecentlyViewed();
+    
+    // Check for saved state from browser history
+    const savedState = window.history.state;
+    if (savedState && savedState.selectedColor) {
+      console.log('🔄 Restoring color from browser history:', savedState.selectedColor);
+      setSelectedColor(savedState.selectedColor);
+    }
+    if (savedState && savedState.selectedImage !== undefined) {
+      console.log('🔄 Restoring image from browser history:', savedState.selectedImage);
+      setSelectedImage(savedState.selectedImage);
+    }
     
     // Add body class for fixed mobile layout
     if (window.innerWidth <= 968) {
@@ -354,6 +384,30 @@ const ProductDetail = () => {
     }
   }, [selectedSize, selectedColor, selectedVariant, product]);
 
+  // Scroll to thumbnail when selected image changes
+  useEffect(() => {
+    if (thumbnailContainerRef.current && product && product.images && product.images.length > 0) {
+      const thumbnailElements = thumbnailContainerRef.current.querySelectorAll('.thumbnail-wrapper');
+      console.log('🔍 Found thumbnail elements for scroll:', thumbnailElements.length);
+      if (thumbnailElements[selectedImage]) {
+        console.log('✅ Scrolling to thumbnail:', selectedImage);
+        thumbnailElements[selectedImage].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  }, [selectedImage, product]);
+
+  // Save state to browser history when color or image changes
+  useEffect(() => {
+    if (selectedColor || selectedImage !== undefined) {
+      const state = { 
+        selectedColor, 
+        selectedImage 
+      };
+      console.log('💾 Saving state to browser history:', state);
+      window.history.replaceState(state, '', window.location.pathname);
+    }
+  }, [selectedColor, selectedImage]);
+
   // Cleanup effect for body class and scroll
   useEffect(() => {
     return () => {
@@ -376,29 +430,161 @@ const ProductDetail = () => {
     }
   };
 
+  // Function to deduplicate products by ID
+  const deduplicateProducts = (products) => {
+    if (!Array.isArray(products)) return products;
+    
+    const uniqueProducts = [];
+    const seenIds = new Set();
+    
+    for (const product of products) {
+      const productId = product.id || product._id;
+      if (!seenIds.has(productId)) {
+        seenIds.add(productId);
+        uniqueProducts.push(product);
+      } else {
+        console.warn('🔄 Skipping duplicate product:', productId, product.name);
+      }
+    }
+    
+    if (uniqueProducts.length < products.length) {
+      console.log(`✅ Deduplicated ${products.length} products to ${uniqueProducts.length}`);
+    }
+    
+    return uniqueProducts;
+  };
+
   const fetchProduct = async () => {
     try {
       const response = await api.get(`/products/${id}`);
       console.log('📦 Product data received:', response.data);
-      console.log('🎨 Product colors:', response.data.colors);
-      if (response.data.colors && response.data.colors.length > 0) {
+      
+      // Immediately deduplicate if response is array
+      let productData = response.data;
+      if (Array.isArray(response.data)) {
+        console.log('⚠️ API returned array, deduplicating...');
+        const uniqueProducts = deduplicateProducts(response.data);
+        productData = uniqueProducts[0]; // Take first unique product
+        console.log('✅ Using deduplicated product:', productData.name, 'ID:', productData.id || productData._id);
+      }
+      
+      // Validate product data
+      if (!productData || (!productData.id && !productData._id)) {
+        console.error('❌ Invalid product data received:', productData);
+        setError('Product not found or invalid data');
+        return;
+      }
+      
+      console.log('✅ Using product:', productData.name, 'ID:', productData.id || productData._id);
+      console.log('🎨 Product colors:', productData.colors);
+      if (productData.colors && productData.colors.length > 0) {
         console.log('🎨 Colors with prices:');
-        response.data.colors.forEach(color => {
+        productData.colors.forEach(color => {
           console.log(`  - ${color.colorName}: ₹${color.price} (Stock: ${color.stock})`);
         });
       }
-      setProduct(response.data);
+      setProduct(productData);
+      
+      // Set initial color if passed from navigation state
+      const state = location.state;
+      const savedState = window.history.state;
+      let initialColor = null;
+      
+      console.log('🔍 Navigation state:', state);
+      console.log('🔍 Browser history state:', savedState);
+      console.log('🔍 Search params:', searchParams.toString());
+      
+      // Priority: Browser history > Navigation state > URL params > Product data
+      if (savedState && savedState.selectedColor) {
+        initialColor = savedState.selectedColor;
+        console.log('🎨 Restoring color from browser history:', initialColor);
+        setSelectedColor(initialColor);
+      } else if (state && state.fromHome && searchParams.get('selectedColor')) {
+        initialColor = searchParams.get('selectedColor');
+        console.log('🎨 Setting initial color from URL params:', initialColor);
+        setSelectedColor(initialColor);
+      } else if (state && state.selectedColor) {
+        initialColor = state.selectedColor;
+        console.log('🎨 Setting initial color from navigation state:', state.selectedColor);
+        setSelectedColor(state.selectedColor);
+      } else if (response.data.selectedColor) {
+        initialColor = response.data.selectedColor;
+        console.log('🎨 Setting initial color from product data:', response.data.selectedColor);
+        setSelectedColor(response.data.selectedColor);
+      } else {
+        console.log('🎨 No initial color found, using default');
+      }
+      
+      // Restore image from browser history if available
+      if (savedState && savedState.selectedImage !== undefined) {
+        console.log('🖼️ Restoring image from browser history:', savedState.selectedImage);
+        setSelectedImage(savedState.selectedImage);
+      }
+      
+      // Set initial image based on selected color
+      if (initialColor && productData.images && productData.images.length > 0) {
+        console.log('🖼️ Looking for image for color:', initialColor);
+        console.log('🖼️ Available images:', productData.images);
+        console.log('🖼️ Available variants:', productData.variants);
+        console.log('🖼️ Available colors:', productData.colors);
+        
+        // Try to find color-specific image first
+        let targetImageIndex = 0;
+        
+        // Check variants for color-specific image
+        if (productData.variants && productData.variants.length > 0) {
+          const colorVariant = productData.variants.find(v => v.colorName === initialColor);
+          console.log('🔍 Found variant for color:', colorVariant);
+          if (colorVariant && colorVariant.imageUrl) {
+            const imageIndex = productData.images.findIndex(img => img === colorVariant.imageUrl);
+            if (imageIndex !== -1) {
+              targetImageIndex = imageIndex;
+              console.log('🖼️ Setting initial image from variant:', targetImageIndex);
+            }
+          }
+        }
+        
+        // Check colors array for color-specific image
+        if (targetImageIndex === 0 && productData.colors && productData.colors.length > 0) {
+          const colorObj = productData.colors.find(c => c.colorName === initialColor);
+          console.log('🔍 Found color object:', colorObj);
+          if (colorObj && colorObj.imageUrl) {
+            const imageIndex = productData.images.findIndex(img => img === colorObj.imageUrl);
+            if (imageIndex !== -1) {
+              targetImageIndex = imageIndex;
+              console.log('🖼️ Setting initial image from colors array:', targetImageIndex);
+            }
+          }
+        }
+        
+        console.log('🖼️ Final target image index:', targetImageIndex);
+        setSelectedImage(targetImageIndex);
+        
+        // Scroll to the thumbnail for the selected image
+        setTimeout(() => {
+          if (thumbnailContainerRef.current) {
+            const thumbnailElements = thumbnailContainerRef.current.querySelectorAll('.thumbnail-wrapper');
+            console.log('🔍 Found thumbnail elements:', thumbnailElements.length);
+            if (thumbnailElements[targetImageIndex]) {
+              console.log('✅ Auto-scrolling to thumbnail:', targetImageIndex);
+              thumbnailElements[targetImageIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+          }
+        }, 100); // Small delay to ensure thumbnails are rendered
+      }
       
       // Set range prices if available
-      if (response.data.rangePrices && response.data.rangePrices.length > 0) {
-        setRangePrices(response.data.rangePrices);
-        console.log('💰 Range prices loaded:', response.data.rangePrices);
+      if (productData.rangePrices && productData.rangePrices.length > 0) {
+        setRangePrices(productData.rangePrices);
+        console.log('💰 Range prices loaded:', productData.rangePrices);
       }
       
       // Set initial quantity to minimum sale quantity
-      const minQty = response.data.sale_min_qty || 1;
+      const minQty = productData.sale_min_qty || 1;
       setQuantity(minQty);
     } catch (error) {
+      console.error('❌ Error fetching product:', error);
+      setError('Product not found or failed to load');
       toast.error('Product not found');
       navigate('/products');
     } finally {
@@ -571,10 +757,28 @@ const ProductDetail = () => {
         if (product.variants && product.variants.length > 0) {
           const colorVariants = product.variants.filter(v => v.colorName === colorName);
           sizesForColor = [...new Set(colorVariants.map(v => v.size))];
+          // Sort sizes numerically if they are numbers, otherwise alphabetically
+          sizesForColor.sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
         } else {
           sizesForColor = product.sizes && product.sizes.length > 0 
             ? product.sizes.map(s => s.size)
             : ['One Size'];
+          // Sort sizes numerically if they are numbers, otherwise alphabetically
+          sizesForColor.sort((a, b) => {
+            const aNum = parseInt(a);
+            const bNum = parseInt(b);
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+              return aNum - bNum;
+            }
+            return a.localeCompare(b);
+          });
         }
         
         // Initialize quantities for this color (only if not already exists)
@@ -1070,9 +1274,62 @@ const ProductDetail = () => {
   if (loading) {
     return (
       <div className="product-detail">
-        <div className="loading-container">
+        <div className="loading-container" style={{
+          position: 'relative',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f8f9fa'
+        }}>
           <div className="loading-spinner"></div>
           <div className="loading-text">Loading product details...</div>
+          <div style={{ 
+            marginTop: '20px', 
+            fontSize: '14px', 
+            color: '#666',
+            textAlign: 'center'
+          }}>
+            <div>🔍 Removing duplicates...</div>
+            <div style={{ fontSize: '12px', marginTop: '5px' }}>Please wait while we prepare your product</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="product-detail">
+        <div className="error-container" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '60px 20px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>❌</div>
+          <h2 style={{ color: '#ff6b00', marginBottom: '10px' }}>Error Loading Product</h2>
+          <p style={{ color: '#666', marginBottom: '20px' }}>{error}</p>
+          <button 
+            onClick={() => {
+              setError(null);
+              fetchProduct();
+            }}
+            style={{
+              backgroundColor: '#ff6b00',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -1316,12 +1573,7 @@ const ProductDetail = () => {
                   </div>
                 </>
               )}
-              {showZoomHint && (
-                <div className="zoom-hint">
-                  <span>👆</span>
-                  <span>Pinch to zoom more</span>
-                </div>
-              )}
+              {/* Zoom hint removed */}
             </div>
             
             {product.images && product.images.length > 1 && (
@@ -1749,8 +2001,17 @@ const ProductDetail = () => {
                 {(() => {
                   // Get unique sizes from variants
                   const uniqueSizes = [...new Set(product.variants.map(v => v.size))];
+                  // Sort sizes numerically if they are numbers, otherwise alphabetically
+                  const sortedSizes = uniqueSizes.sort((a, b) => {
+                    const aNum = parseInt(a);
+                    const bNum = parseInt(b);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                      return aNum - bNum;
+                    }
+                    return a.localeCompare(b);
+                  });
                   
-                  return uniqueSizes.map((size, index) => {
+                  return sortedSizes.map((size, index) => {
                     // Get all variants for this size
                     const sizeVariants = product.variants.filter(v => v.size === size);
                     // Calculate total stock for this size
@@ -1791,7 +2052,14 @@ const ProductDetail = () => {
                   Select Size: <span className="required">*</span>
                 </label>
                 <div className="size-buttons-container">
-                  {product.sizes.map((sizeItem, index) => (
+                  {[...product.sizes].sort((a, b) => {
+                    const aNum = parseInt(a.size);
+                    const bNum = parseInt(b.size);
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                      return aNum - bNum;
+                    }
+                    return a.size.localeCompare(b.size);
+                  }).map((sizeItem, index) => (
                     <button
                       key={index}
                       type="button"
@@ -2335,10 +2603,28 @@ const ProductDetail = () => {
                         if (product.variants && product.variants.length > 0) {
                           const colorVariants = product.variants.filter(v => v.colorName === selectedColorName);
                           sizesForColor = [...new Set(colorVariants.map(v => v.size))];
+                          // Sort sizes numerically if they are numbers, otherwise alphabetically
+                          sizesForColor.sort((a, b) => {
+                            const aNum = parseInt(a);
+                            const bNum = parseInt(b);
+                            if (!isNaN(aNum) && !isNaN(bNum)) {
+                              return aNum - bNum;
+                            }
+                            return a.localeCompare(b);
+                          });
                         } else {
                           sizesForColor = product.sizes && product.sizes.length > 0 
                             ? product.sizes.map(s => s.size)
                             : ['One Size'];
+                          // Sort sizes numerically if they are numbers, otherwise alphabetically
+                          sizesForColor.sort((a, b) => {
+                            const aNum = parseInt(a);
+                            const bNum = parseInt(b);
+                            if (!isNaN(aNum) && !isNaN(bNum)) {
+                              return aNum - bNum;
+                            }
+                            return a.localeCompare(b);
+                          });
                         }
                         
                         const totalQtyForColor = sizesForColor.reduce((sum, size) => {

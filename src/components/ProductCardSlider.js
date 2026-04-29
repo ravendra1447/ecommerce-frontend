@@ -302,7 +302,7 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     sessionStorage.setItem('mobileProductClick', 'true');
     
     // Navigate with state
-    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
   };
 
   const handleChatNow = (e) => {
@@ -320,7 +320,7 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     sessionStorage.setItem('mobileProductClick', 'true');
     
     // Navigate to product detail page
-    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
   };
 
   const handleStartOrder = (e) => {
@@ -332,7 +332,7 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
     sessionStorage.setItem('mobileProductClick', 'true');
     
     // Navigate to product detail page
-    navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
+    navigate(`/product-detail/${product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
   };
 
   if (!product) return null;
@@ -450,7 +450,7 @@ const ProductCardSlider = ({ product, compact = false, isHero = false, hideCateg
               sessionStorage.setItem('mobileProductClick', 'true');
               
               // Navigate with state
-              navigate(`/product-detail/${product.id}`, { state: { fromHome: true } });
+              navigate(`/product-detail/${product.id}`, { state: { fromHome: true, selectedColor: product.selectedColor } });
             }}
             style={{
               background: 'none',
